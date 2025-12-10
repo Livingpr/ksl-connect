@@ -1,0 +1,18 @@
+# Place your TensorFlow.js model files here
+# 
+# Required files:
+# - model.json (model architecture and metadata)
+# - group1-shard1of1.bin (or similar weight shard files)
+#
+# How to convert your model to TensorFlow.js format:
+#
+# From Keras (.h5):
+#   tensorflowjs_converter --input_format=keras model.h5 ./output_dir
+#
+# From SavedModel:
+#   tensorflowjs_converter --input_format=tf_saved_model ./saved_model ./output_dir
+#
+# From PyTorch (via ONNX):
+#   1. Export to ONNX: torch.onnx.export(model, dummy_input, "model.onnx")
+#   2. Convert ONNX to TF: Use onnx-tf
+#   3. Convert TF to TFJS: tensorflowjs_converter
