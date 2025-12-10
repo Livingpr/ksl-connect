@@ -7,7 +7,8 @@ import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/hooks/useAuth";
 import { addTranslation } from "@/lib/db";
 import { speechService } from "@/lib/tts";
-import { detectGesture, GestureBuffer } from "@/lib/signMapping";
+import { GestureBuffer } from "@/lib/signMapping";
+import { predictSign, loadModel, getModelStatus } from "@/lib/mlModel";
 import { getConfidenceLevel } from "@/types";
 import {
   ArrowLeft,
@@ -61,7 +62,7 @@ export default function CameraPage() {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
-  // Load MediaPipe
+  // Load MediaPipe and ML Model
   useEffect(() => {
     const loadMediaPipe = async () => {
       try {
@@ -80,6 +81,15 @@ export default function CameraPage() {
         await loadScript("https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js");
         await loadScript("https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js");
         await loadScript("https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js");
+
+        // Load ML model (runs in parallel conceptually, but awaited for status)
+        await loadModel();
+        const status = getModelStatus();
+        if (status.usingFallback) {
+          console.log('[Camera] Using fallback gesture detection');
+        } else {
+          console.log('[Camera] ML model loaded successfully');
+        }
 
         // Initialize Hands
         const hands = new window.Hands({
@@ -148,15 +158,16 @@ export default function CameraPage() {
           });
         }
 
-        // Detect gesture
-        const gesture = detectGesture(landmarks);
-        if (gesture) {
-          const smoothedResult = gestureBufferRef.current.add(gesture);
-          if (smoothedResult) {
-            setCurrentSign(smoothedResult);
-            setSaved(false);
+        // Detect gesture using ML model (or fallback)
+        predictSign(landmarks).then(gesture => {
+          if (gesture) {
+            const smoothedResult = gestureBufferRef.current.add(gesture);
+            if (smoothedResult) {
+              setCurrentSign(smoothedResult);
+              setSaved(false);
+            }
           }
-        }
+        });
       }
     } else {
       setHandDetected(false);
