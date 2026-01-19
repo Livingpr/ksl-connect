@@ -10,6 +10,7 @@ import { getStats, getTranslations } from "@/lib/db";
 import { predictSign, loadModel, getModelStatus } from "@/lib/mlModel";
 import { speechService } from "@/lib/tts";
 import { GestureBuffer } from "@/lib/signMapping";
+import { detectTwoHandedSign, TwoHandedGestureBuffer } from "@/lib/twoHandedDetection";
 import { PremiumButton } from "@/components/premium/PremiumButton";
 import { PremiumBadge } from "@/components/premium/PremiumBadge";
 import type { Translation, TranslationStats } from "@/types";
@@ -65,8 +66,10 @@ export default function Dashboard() {
   const [currentSign, setCurrentSign] = useState<{ sign: string; confidence: number } | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(1);
+  const [isTwoHanded, setIsTwoHanded] = useState(false);
 
   const gestureBufferRef = useRef(new GestureBuffer());
+  const twoHandedBufferRef = useRef(new TwoHandedGestureBuffer());
   const handsRef = useRef<any>(null);
   const animationRef = useRef<number | null>(null);
 
@@ -161,11 +164,16 @@ export default function Dashboard() {
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       setHandDetected(true);
+      const numHands = results.multiHandLandmarks.length;
 
-      for (const landmarks of results.multiHandLandmarks) {
+      // Draw landmarks for all detected hands
+      for (let i = 0; i < numHands; i++) {
+        const landmarks = results.multiHandLandmarks[i];
+        const handColor = i === 0 ? "#10B981" : "#3B82F6"; // Green for first, Blue for second
+
         if (window.drawConnectors && window.HAND_CONNECTIONS) {
           window.drawConnectors(ctx, landmarks, window.HAND_CONNECTIONS, {
-            color: "#10B981",
+            color: handColor,
             lineWidth: 3,
           });
         }
@@ -177,6 +185,26 @@ export default function Dashboard() {
             radius: 4,
           });
         }
+      }
+
+      // Two-handed detection for premium users
+      if (isPremium && numHands === 2) {
+        setIsTwoHanded(true);
+        const leftHand = results.multiHandLandmarks[0];
+        const rightHand = results.multiHandLandmarks[1];
+        
+        const twoHandedResult = detectTwoHandedSign(leftHand, rightHand);
+        if (twoHandedResult) {
+          const smoothedResult = twoHandedBufferRef.current.add(twoHandedResult);
+          if (smoothedResult) {
+            setCurrentSign({ sign: smoothedResult.sign, confidence: smoothedResult.confidence });
+            autoSave({ sign: smoothedResult.sign, confidence: smoothedResult.confidence });
+          }
+        }
+      } else {
+        // Single-hand detection
+        setIsTwoHanded(false);
+        const landmarks = results.multiHandLandmarks[0];
 
         predictSign(landmarks).then((gesture) => {
           if (gesture) {
@@ -190,10 +218,11 @@ export default function Dashboard() {
       }
     } else {
       setHandDetected(false);
+      setIsTwoHanded(false);
     }
 
     ctx.restore();
-  }, [autoSave]);
+  }, [autoSave, isPremium]);
 
   useEffect(() => {
     if (!handsRef.current || cameraLoading) return;
@@ -378,12 +407,21 @@ export default function Dashboard() {
                 <div
                   className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium backdrop-blur-sm ${
                     handDetected
-                      ? "bg-success/20 text-success"
+                      ? isTwoHanded
+                        ? "bg-primary/20 text-primary"
+                        : "bg-success/20 text-success"
                       : "bg-muted/80 text-muted-foreground"
                   }`}
                 >
                   <Hand className="h-4 w-4" />
-                  {handDetected ? "Hand Detected" : "Show Your Hand"}
+                  {handDetected 
+                    ? isTwoHanded 
+                      ? "2 Hands Detected" 
+                      : "Show Your Hand" 
+                    : "Show Your Hand"}
+                  {isPremium && isTwoHanded && (
+                    <span className="text-xs opacity-70">Premium</span>
+                  )}
                 </div>
               </div>
 
