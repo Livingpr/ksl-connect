@@ -197,6 +197,10 @@
     background-size: 200% 200%;
     animation: gradient 8s ease infinite;
   }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
 }
 
 @keyframes float {
@@ -217,6 +221,17 @@
   }
   100% {
     background-position: 0% 50%;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: var(--shadow-accent);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 20px hsl(24 95% 53% / 0.6), 0 0 40px hsl(24 95% 53% / 0.3);
+    opacity: 0.9;
   }
 }
 

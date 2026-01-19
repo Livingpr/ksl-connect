@@ -1,5 +1,7 @@
 export type UserRole = 'student' | 'teacher' | 'interpreter';
 
+export type SubscriptionStatus = 'free' | 'premium_monthly' | 'premium_yearly';
+
 export interface User {
   id: string;
   email: string;
@@ -7,12 +9,16 @@ export interface User {
   photoURL?: string;
   role: UserRole;
   createdAt: Date;
+  isPremium?: boolean;
+  subscriptionStatus?: SubscriptionStatus;
+  subscriptionExpiry?: Date | null;
 }
 
 export interface SignResult {
   sign: string;
   confidence: number;
   timestamp: Date;
+  isTwoHanded?: boolean;
 }
 
 export interface Translation {
@@ -23,6 +29,8 @@ export interface Translation {
   isFavorite: boolean;
   synced: boolean;
   thumbnailUrl?: string;
+  autoSaved?: boolean;
+  duration?: number;
 }
 
 export interface TranslationStats {

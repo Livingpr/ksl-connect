@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/hooks/useAuth";
-import { addTranslation } from "@/lib/db";
+import { usePremium } from "@/hooks/usePremium";
+import { useAutoSave } from "@/hooks/useAutoSave";
 import { speechService } from "@/lib/tts";
 import { GestureBuffer } from "@/lib/signMapping";
-import { predictSign, loadModel, getModelStatus } from "@/lib/mlModel";
+import { predictSign, loadModel } from "@/lib/mlModel";
 import { getConfidenceLevel } from "@/types";
+import { PremiumButton } from "@/components/premium/PremiumButton";
 import {
   ArrowLeft,
   Camera,
@@ -19,10 +21,10 @@ import {
   Play,
   Pause,
   RotateCcw,
-  Save,
   Hand,
   Loader2,
   Settings2,
+  Check,
 } from "lucide-react";
 
 declare global {
@@ -37,6 +39,7 @@ declare global {
 export default function CameraPage() {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [handDetected, setHandDetected] = useState(false);
@@ -46,14 +49,14 @@ export default function CameraPage() {
   const [speed, setSpeed] = useState([1]);
   const [language, setLanguage] = useState<"en-US" | "sw-KE">("en-US");
   const [showSettings, setShowSettings] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  
+
   const gestureBufferRef = useRef(new GestureBuffer());
   const handsRef = useRef<any>(null);
   const animationRef = useRef<number | null>(null);
 
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isPremium, maxHands } = usePremium();
+  const { autoSave, reset: resetAutoSave, lastSaved } = useAutoSave();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -66,9 +69,12 @@ export default function CameraPage() {
   useEffect(() => {
     const loadMediaPipe = async () => {
       try {
-        // Load scripts dynamically
         const loadScript = (src: string) => {
           return new Promise<void>((resolve, reject) => {
+            if (document.querySelector(`script[src="${src}"]`)) {
+              resolve();
+              return;
+            }
             const script = document.createElement("script");
             script.src = src;
             script.async = true;
@@ -82,16 +88,8 @@ export default function CameraPage() {
         await loadScript("https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js");
         await loadScript("https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js");
 
-        // Load ML model (runs in parallel conceptually, but awaited for status)
         await loadModel();
-        const status = getModelStatus();
-        if (status.usingFallback) {
-          console.log('[Camera] Using fallback gesture detection');
-        } else {
-          console.log('[Camera] ML model loaded successfully');
-        }
 
-        // Initialize Hands
         const hands = new window.Hands({
           locateFile: (file: string) => {
             return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
@@ -99,7 +97,7 @@ export default function CameraPage() {
         });
 
         hands.setOptions({
-          maxNumHands: 1,
+          maxNumHands: maxHands,
           modelComplexity: 1,
           minDetectionConfidence: 0.5,
           minTrackingConfidence: 0.5,
@@ -121,7 +119,7 @@ export default function CameraPage() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, []);
+  }, [maxHands]);
 
   const onResults = useCallback((results: any) => {
     const canvas = canvasRef.current;
@@ -139,17 +137,15 @@ export default function CameraPage() {
 
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
       setHandDetected(true);
-      
+
       for (const landmarks of results.multiHandLandmarks) {
-        // Draw connections
         if (window.drawConnectors && window.HAND_CONNECTIONS) {
           window.drawConnectors(ctx, landmarks, window.HAND_CONNECTIONS, {
             color: "#10B981",
             lineWidth: 3,
           });
         }
-        
-        // Draw landmarks
+
         if (window.drawLandmarks) {
           window.drawLandmarks(ctx, landmarks, {
             color: "#F97316",
@@ -158,13 +154,12 @@ export default function CameraPage() {
           });
         }
 
-        // Detect gesture using ML model (or fallback)
-        predictSign(landmarks).then(gesture => {
+        predictSign(landmarks).then((gesture) => {
           if (gesture) {
             const smoothedResult = gestureBufferRef.current.add(gesture);
             if (smoothedResult) {
               setCurrentSign(smoothedResult);
-              setSaved(false);
+              autoSave(smoothedResult);
             }
           }
         });
@@ -174,7 +169,7 @@ export default function CameraPage() {
     }
 
     ctx.restore();
-  }, []);
+  }, [autoSave]);
 
   // Process video frames
   useEffect(() => {
@@ -222,46 +217,26 @@ export default function CameraPage() {
     }
   };
 
-  const handleSave = async () => {
-    if (!currentSign || isSaving) return;
-
-    setIsSaving(true);
-    try {
-      await addTranslation({
-        text: currentSign.sign,
-        confidence: Math.round(currentSign.confidence),
-        timestamp: new Date(),
-        isFavorite: false,
-        synced: false,
-      });
-      setSaved(true);
-    } catch (error) {
-      console.error("Failed to save translation:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const handleReset = () => {
     setCurrentSign(null);
     gestureBufferRef.current.clear();
-    setSaved(false);
+    resetAutoSave();
   };
 
   const confidenceLevel = currentSign ? getConfidenceLevel(currentSign.confidence) : null;
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3">
+      <header className="shrink-0 flex items-center justify-between border-b border-border bg-card px-4 py-3">
         <Link to="/dashboard">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -278,7 +253,11 @@ export default function CameraPage() {
           >
             <Hand className="h-4 w-4" />
             {handDetected ? "Hand Detected" : "No Hand"}
+            {!isPremium && handDetected && (
+              <span className="text-xs opacity-70">(1 hand)</span>
+            )}
           </div>
+          <PremiumButton />
           <Button
             variant="ghost"
             size="icon"
@@ -289,8 +268,8 @@ export default function CameraPage() {
         </div>
       </header>
 
-      {/* Camera Area */}
-      <div className="relative flex-1">
+      {/* Camera Area - Fills remaining space */}
+      <div ref={containerRef} className="relative min-h-0 flex-1">
         {isLoading ? (
           <div className="flex h-full items-center justify-center bg-muted">
             <div className="text-center">
@@ -330,7 +309,7 @@ export default function CameraPage() {
               className="absolute inset-0 h-full w-full object-cover"
               style={{ transform: "scaleX(-1)" }}
             />
-            
+
             {/* Hand detection indicator */}
             <AnimatePresence>
               {handDetected && (
@@ -346,18 +325,23 @@ export default function CameraPage() {
         )}
       </div>
 
-      {/* Output Panel */}
+      {/* Output Panel - Fixed at bottom */}
       <motion.div
         initial={{ y: "100%" }}
-        animate={{ y: currentSign ? 0 : "50%" }}
-        className="border-t border-border bg-card p-6"
+        animate={{ y: 0 }}
+        className="shrink-0 border-t border-border bg-card p-4"
       >
         {currentSign ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Translation Result */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-heading text-3xl font-bold">{currentSign.sign}</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-heading text-2xl font-bold">{currentSign.sign}</h2>
+                  {lastSaved === currentSign.sign && (
+                    <Check className="h-5 w-5 text-success" />
+                  )}
+                </div>
                 <div className="mt-1 flex items-center gap-2">
                   <span
                     className={`rounded-full px-3 py-1 text-sm font-medium ${
@@ -370,41 +354,26 @@ export default function CameraPage() {
                   >
                     {Math.round(currentSign.confidence)}% confidence
                   </span>
+                  {lastSaved === currentSign.sign && (
+                    <span className="text-sm text-muted-foreground">Auto-saved</span>
+                  )}
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant={saved ? "success" : "outline"}
-                  size="icon"
-                  onClick={handleSave}
-                  disabled={isSaving || saved}
-                >
-                  {isSaving ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Save className="h-5 w-5" />
-                  )}
-                </Button>
-                <Button variant="outline" size="icon" onClick={handleReset}>
-                  <RotateCcw className="h-5 w-5" />
-                </Button>
-              </div>
+              <Button variant="outline" size="icon" onClick={handleReset}>
+                <RotateCcw className="h-5 w-5" />
+              </Button>
             </div>
 
             {/* TTS Controls */}
-            <div className="flex items-center gap-4 rounded-lg border border-border bg-muted/50 p-4">
+            <div className="flex items-center gap-4 rounded-lg border border-border bg-muted/50 p-3">
               <Button
                 variant={isPlaying ? "accent" : "default"}
                 size="icon"
                 onClick={handleSpeak}
               >
-                {isPlaying ? (
-                  <Pause className="h-5 w-5" />
-                ) : (
-                  <Play className="h-5 w-5" />
-                )}
+                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
               </Button>
-              
+
               <div className="flex flex-1 items-center gap-4">
                 <div className="flex items-center gap-2">
                   {volume[0] === 0 ? (
@@ -417,19 +386,19 @@ export default function CameraPage() {
                     onValueChange={setVolume}
                     max={1}
                     step={0.1}
-                    className="w-24"
+                    className="w-20"
                   />
                 </div>
-                
+
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Speed: {speed[0]}x</span>
+                  <span>{speed[0]}x</span>
                   <Slider
                     value={speed}
                     onValueChange={setSpeed}
                     min={0.5}
                     max={2}
                     step={0.25}
-                    className="w-24"
+                    className="w-20"
                   />
                 </div>
               </div>
@@ -437,7 +406,7 @@ export default function CameraPage() {
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as "en-US" | "sw-KE")}
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="rounded-md border border-border bg-background px-2 py-1 text-sm"
               >
                 <option value="en-US">English</option>
                 <option value="sw-KE">Swahili</option>
@@ -445,9 +414,9 @@ export default function CameraPage() {
             </div>
           </div>
         ) : (
-          <div className="text-center text-muted-foreground">
-            <Camera className="mx-auto h-8 w-8 mb-2" />
-            <p>Show your hand gestures to start translating</p>
+          <div className="text-center py-2 text-muted-foreground">
+            <Camera className="mx-auto h-6 w-6 mb-1" />
+            <p className="text-sm">Show your hand gestures to start translating</p>
           </div>
         )}
       </motion.div>
@@ -459,15 +428,11 @@ export default function CameraPage() {
             initial={{ opacity: 0, x: "100%" }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: "100%" }}
-            className="fixed right-0 top-0 h-full w-80 border-l border-border bg-card p-6 shadow-lg"
+            className="fixed right-0 top-0 h-full w-72 border-l border-border bg-card p-6 shadow-lg z-50"
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-heading text-lg font-semibold">Settings</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowSettings(false)}
-              >
+              <Button variant="ghost" size="icon" onClick={() => setShowSettings(false)}>
                 ×
               </Button>
             </div>
