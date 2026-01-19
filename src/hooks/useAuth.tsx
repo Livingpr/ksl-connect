@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { User, UserRole } from '@/types';
+import type { User, UserRole, SubscriptionStatus } from '@/types';
 
 interface AuthContextType {
   user: User | null;
@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser({
           ...parsed,
           createdAt: new Date(parsed.createdAt),
+          subscriptionExpiry: parsed.subscriptionExpiry ? new Date(parsed.subscriptionExpiry) : null,
         });
       } catch {
         localStorage.removeItem(STORAGE_KEY);
@@ -49,6 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       displayName: email.split('@')[0],
       role: 'student',
       createdAt: new Date(),
+      isPremium: false,
+      subscriptionStatus: 'free',
     };
     
     setUser(mockUser);
@@ -64,6 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       displayName,
       role,
       createdAt: new Date(),
+      isPremium: false,
+      subscriptionStatus: 'free',
     };
     
     setUser(newUser);
@@ -80,6 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: 'student',
       createdAt: new Date(),
       photoURL: 'https://api.dicebear.com/7.x/avataaars/svg?seed=google',
+      isPremium: false,
+      subscriptionStatus: 'free',
     };
     
     setUser(mockUser);
