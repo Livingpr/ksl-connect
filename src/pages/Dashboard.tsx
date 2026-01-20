@@ -348,10 +348,10 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main Content - Camera Hero */}
-      <main className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        {/* Camera Section - 70% on desktop */}
-        <div className="relative flex-1 lg:flex-[7]">
+      {/* Main Content - Full Camera */}
+      <main className="flex min-h-0 flex-1">
+        {/* Camera Section - Full width */}
+        <div className="relative flex-1">
           {cameraLoading ? (
             <div className="flex h-full items-center justify-center bg-muted">
               <div className="text-center">
@@ -526,88 +526,6 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-
-        {/* Sidebar - Stats and Recent */}
-        <aside className="shrink-0 border-t border-border bg-card lg:w-80 lg:border-l lg:border-t-0">
-          <div className="flex h-full flex-col p-4">
-            {/* Welcome */}
-            <div className="mb-4">
-              <p className="text-sm text-muted-foreground">Welcome back,</p>
-              <p className="font-heading font-semibold">
-                {user?.displayName?.split(" ")[0] || "there"}!
-              </p>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="mb-4 grid grid-cols-3 gap-2 lg:grid-cols-1">
-              {statCards.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-muted/50 p-3"
-                >
-                  <div className={`rounded-lg ${stat.bgColor} p-2`}>
-                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-heading text-lg font-bold leading-none">{stat.value}</p>
-                    <p className="text-xs text-muted-foreground">{stat.label}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Recent Translations */}
-            <div className="min-h-0 flex-1">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-medium">Recent</h3>
-                <Link to="/history">
-                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                    View All
-                    <ChevronRight className="ml-1 h-3 w-3" />
-                  </Button>
-                </Link>
-              </div>
-
-              {recentTranslations.length > 0 ? (
-                <div className="space-y-2">
-                  {recentTranslations.map((translation) => (
-                    <div
-                      key={translation.id}
-                      className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-2"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{translation.text}</p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {new Date(translation.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                          translation.confidence >= 80
-                            ? "bg-success/10 text-success"
-                            : translation.confidence >= 60
-                            ? "bg-warning/10 text-warning"
-                            : "bg-destructive/10 text-destructive"
-                        }`}
-                      >
-                        {translation.confidence}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed border-border p-4 text-center">
-                  <Hand className="mx-auto h-8 w-8 text-muted-foreground/50" />
-                  <p className="mt-2 text-xs text-muted-foreground">No translations yet</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </aside>
       </main>
 
       {/* Mobile Navigation */}
