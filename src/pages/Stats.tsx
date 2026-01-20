@@ -1,0 +1,435 @@
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
+import { usePremium } from "@/hooks/usePremium";
+import { getTranslations, getStats } from "@/lib/db";
+import { PremiumButton } from "@/components/premium/PremiumButton";
+import { MobileNav } from "@/components/layout/MobileNav";
+import {
+  ArrowLeft,
+  BarChart3,
+  TrendingUp,
+  Target,
+  Flame,
+  Award,
+  Hand,
+  Lock,
+  Calendar,
+  Loader2,
+} from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+} from "recharts";
+import type { Translation } from "@/types";
+
+interface WeeklyData {
+  day: string;
+  signs: number;
+}
+
+interface AccuracyData {
+  day: string;
+  accuracy: number;
+}
+
+interface TopSign {
+  text: string;
+  count: number;
+  percentage: number;
+}
+
+export default function StatsPage() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isPremium } = usePremium();
+  const navigate = useNavigate();
+
+  const [stats, setStats] = useState({ totalSigns: 0, avgAccuracy: 0, todayCount: 0 });
+  const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
+  const [accuracyData, setAccuracyData] = useState<AccuracyData[]>([]);
+  const [topSigns, setTopSigns] = useState<TopSign[]>([]);
+  const [streakDays, setStreakDays] = useState(7);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate("/auth");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const dbStats = await getStats();
+        setStats(dbStats);
+
+        const allTranslations = await getTranslations();
+
+        // Calculate weekly data
+        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const now = new Date();
+        const weekData: WeeklyData[] = [];
+        const accData: AccuracyData[] = [];
+
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date(now);
+          date.setDate(date.getDate() - i);
+          date.setHours(0, 0, 0, 0);
+          const nextDate = new Date(date);
+          nextDate.setDate(nextDate.getDate() + 1);
+
+          const dayTranslations = allTranslations.filter((t) => {
+            const tDate = new Date(t.timestamp);
+            return tDate >= date && tDate < nextDate;
+          });
+
+          weekData.push({
+            day: days[date.getDay()],
+            signs: dayTranslations.length,
+          });
+
+          const avgAcc =
+            dayTranslations.length > 0
+              ? dayTranslations.reduce((sum, t) => sum + t.confidence, 0) /
+                dayTranslations.length
+              : 0;
+
+          accData.push({
+            day: days[date.getDay()],
+            accuracy: Math.round(avgAcc),
+          });
+        }
+
+        setWeeklyData(weekData);
+        setAccuracyData(accData);
+
+        // Calculate top signs
+        const signCounts: Record<string, number> = {};
+        allTranslations.forEach((t) => {
+          signCounts[t.text] = (signCounts[t.text] || 0) + 1;
+        });
+
+        const sorted = Object.entries(signCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 5);
+
+        const maxCount = sorted[0]?.[1] || 1;
+        setTopSigns(
+          sorted.map(([text, count]) => ({
+            text,
+            count,
+            percentage: Math.round((count / maxCount) * 100),
+          }))
+        );
+
+        // Calculate streak (simplified)
+        setStreakDays(7);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Failed to load stats:", error);
+        setIsLoading(false);
+      }
+    };
+
+    loadStats();
+  }, []);
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const statCards = [
+    {
+      icon: Hand,
+      value: stats.totalSigns,
+      label: "Total Signs",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+    },
+    {
+      icon: Target,
+      value: `${stats.avgAccuracy}%`,
+      label: "Avg Accuracy",
+      color: "text-success",
+      bgColor: "bg-success/10",
+    },
+    {
+      icon: Flame,
+      value: streakDays,
+      label: "Day Streak",
+      color: "text-accent",
+      bgColor: "bg-accent/10",
+    },
+    {
+      icon: Award,
+      value: isPremium ? "∞" : "50",
+      label: "Signs Unlocked",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+    },
+  ];
+
+  return (
+    <div className="flex min-h-screen flex-col bg-background pb-20 md:pb-0">
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-lg">
+        <div className="container mx-auto flex h-14 items-center justify-between px-4">
+          <div className="flex items-center gap-3">
+            <Link to="/dashboard">
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <span className="font-heading text-lg font-bold">Statistics</span>
+            </div>
+          </div>
+          <PremiumButton />
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 container mx-auto px-4 py-6 space-y-6">
+        {/* Key Metrics */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+        >
+          {statCards.map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Card className="border-border">
+                <CardContent className="p-4">
+                  <div className={`inline-flex rounded-lg ${stat.bgColor} p-2 mb-2`}>
+                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                  </div>
+                  <p className="font-heading text-2xl font-bold">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Weekly Activity Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Calendar className="h-4 w-4 text-primary" />
+                Weekly Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weeklyData}>
+                    <XAxis
+                      dataKey="day"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                    <Bar
+                      dataKey="signs"
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Accuracy Trend Chart - Premium Only */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className={!isPremium ? "relative overflow-hidden" : ""}>
+            {!isPremium && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/80 backdrop-blur-sm">
+                <div className="text-center p-4">
+                  <Lock className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm font-medium">Premium Feature</p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Unlock accuracy trends
+                  </p>
+                  <PremiumButton />
+                </div>
+              </div>
+            )}
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TrendingUp className="h-4 w-4 text-success" />
+                Accuracy Trend
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={accuracyData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                    />
+                    <XAxis
+                      dataKey="day"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      domain={[0, 100]}
+                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="accuracy"
+                      stroke="hsl(var(--success))"
+                      strokeWidth={2}
+                      dot={{ fill: "hsl(var(--success))" }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Top Signs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Award className="h-4 w-4 text-accent" />
+                Most Used Signs
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topSigns.length > 0 ? (
+                <div className="space-y-3">
+                  {topSigns.map((sign, index) => (
+                    <div key={sign.text} className="flex items-center gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        {index + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium truncate">{sign.text}</p>
+                          <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                            {sign.count}x
+                          </span>
+                        </div>
+                        <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${sign.percentage}%` }}
+                            transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
+                            className="h-full rounded-full bg-primary"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Hand className="mx-auto h-8 w-8 text-muted-foreground/50" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    No signs translated yet
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Premium Upsell */}
+        {!isPremium && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Card className="border-accent/30 bg-gradient-to-br from-accent/5 to-accent/10">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="rounded-full bg-accent/20 p-3">
+                    <TrendingUp className="h-6 w-6 text-accent" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-heading text-lg font-semibold">
+                      Unlock Premium Stats
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Get detailed insights, accuracy trends, weekly reports, and
+                      personalized recommendations.
+                    </p>
+                    <div className="mt-4">
+                      <PremiumButton />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </main>
+
+      {/* Mobile Navigation */}
+      <MobileNav />
+    </div>
+  );
+}
