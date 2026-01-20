@@ -13,6 +13,8 @@ import { GestureBuffer } from "@/lib/signMapping";
 import { detectTwoHandedSign, TwoHandedGestureBuffer } from "@/lib/twoHandedDetection";
 import { PremiumButton } from "@/components/premium/PremiumButton";
 import { PremiumBadge } from "@/components/premium/PremiumBadge";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { TwoHandOverlay } from "@/components/camera/TwoHandOverlay";
 import type { Translation, TranslationStats } from "@/types";
 import { getConfidenceLevel } from "@/types";
 import {
@@ -32,6 +34,7 @@ import {
   VolumeX,
   RotateCcw,
   Check,
+  BarChart3,
 } from "lucide-react";
 
 declare global {
@@ -315,7 +318,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background pb-16 md:pb-0">
       {/* Header */}
       <header className="shrink-0 border-b border-border bg-card/80 backdrop-blur-lg">
         <div className="container mx-auto flex h-14 items-center justify-between px-4">
@@ -402,6 +405,24 @@ export default function Dashboard() {
                 )}
               </AnimatePresence>
 
+              {/* Two-Hand Overlay */}
+              <TwoHandOverlay
+                isTwoHanded={isTwoHanded}
+                isPremium={isPremium}
+                handDetected={handDetected}
+              />
+
+              {/* Stats button */}
+              <Link to="/stats" className="absolute top-4 right-4 z-20">
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-sm shadow-lg hover:bg-card"
+                >
+                  <BarChart3 className="h-5 w-5" />
+                </Button>
+              </Link>
+
               {/* Status badge */}
               <div className="absolute left-4 top-4">
                 <div
@@ -417,7 +438,7 @@ export default function Dashboard() {
                   {handDetected 
                     ? isTwoHanded 
                       ? "2 Hands Detected" 
-                      : "Show Your Hand" 
+                      : "Hand Detected" 
                     : "Show Your Hand"}
                   {isPremium && isTwoHanded && (
                     <span className="text-xs opacity-70">Premium</span>
@@ -588,6 +609,9 @@ export default function Dashboard() {
           </div>
         </aside>
       </main>
+
+      {/* Mobile Navigation */}
+      <MobileNav />
     </div>
   );
 }

@@ -11,7 +11,9 @@ import Dashboard from "./pages/Dashboard";
 import Camera from "./pages/Camera";
 import History from "./pages/History";
 import Profile from "./pages/Profile";
+import Stats from "./pages/Stats";
 import NotFound from "./pages/NotFound";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -29,6 +31,7 @@ const App = () => (
             <Route path="/camera" element={<Camera />} />
             <Route path="/history" element={<History />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/stats" element={<Stats />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

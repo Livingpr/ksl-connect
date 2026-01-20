@@ -13,6 +13,8 @@ import { predictSign, loadModel } from "@/lib/mlModel";
 import { detectTwoHandedSign, TwoHandedGestureBuffer } from "@/lib/twoHandedDetection";
 import { getConfidenceLevel } from "@/types";
 import { PremiumButton } from "@/components/premium/PremiumButton";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { TwoHandOverlay } from "@/components/camera/TwoHandOverlay";
 import {
   ArrowLeft,
   Camera,
@@ -26,6 +28,7 @@ import {
   Loader2,
   Settings2,
   Check,
+  BarChart3,
 } from "lucide-react";
 
 declare global {
@@ -263,7 +266,7 @@ export default function CameraPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <div className="flex h-screen flex-col overflow-hidden bg-background pb-16 md:pb-0">
       {/* Header */}
       <header className="shrink-0 flex items-center justify-between border-b border-border bg-card px-4 py-3">
         <Link to="/dashboard">
@@ -356,6 +359,24 @@ export default function CameraPage() {
                 />
               )}
             </AnimatePresence>
+
+            {/* Two-Hand Overlay */}
+            <TwoHandOverlay
+              isTwoHanded={isTwoHanded}
+              isPremium={isPremium}
+              handDetected={handDetected}
+            />
+
+            {/* Stats button */}
+            <Link to="/stats" className="absolute top-4 right-4 z-20">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-sm shadow-lg hover:bg-card"
+              >
+                <BarChart3 className="h-5 w-5" />
+              </Button>
+            </Link>
           </div>
         )}
       </div>
@@ -512,6 +533,9 @@ export default function CameraPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile Navigation */}
+      <MobileNav />
     </div>
   );
 }
