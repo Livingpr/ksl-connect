@@ -15,15 +15,15 @@ export const MobileNav = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg safe-area-bottom md:hidden">
-      <div className="flex items-center justify-around py-2">
+    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg safe-area-bottom">
+      <div className="flex h-16 items-center justify-around">
         {navItems.map(({ icon: Icon, label, path }) => {
           const isActive = location.pathname === path;
           return (
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`relative flex min-w-[56px] flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 transition-colors ${
+              className={`relative flex min-w-[52px] flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 transition-colors ${
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground active:bg-muted"

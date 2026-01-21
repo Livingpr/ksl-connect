@@ -184,92 +184,90 @@ export default function StatsPage() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-background pb-20 md:pb-0">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-lg">
-        <div className="container mx-auto flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
+    <div className="flex h-[100dvh] flex-col bg-background">
+      {/* Header - Compact 48px */}
+      <header className="shrink-0 border-b border-border bg-card/95 backdrop-blur-lg safe-area-top">
+        <div className="flex h-12 items-center justify-between px-3">
+          <div className="flex items-center gap-2">
             <Link to="/dashboard">
-              <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              <span className="font-heading text-lg font-bold">Statistics</span>
+            <div className="flex items-center gap-1.5">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              <span className="font-heading text-base font-bold">Stats</span>
             </div>
           </div>
           <PremiumButton />
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 container mx-auto px-4 py-6 space-y-6">
-        {/* Key Metrics */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 gap-3 sm:grid-cols-4"
-        >
+      {/* Main Content - Scrollable */}
+      <main className="flex-1 overflow-y-auto p-3 pb-20 space-y-3">
+        {/* Key Metrics - 2x2 Grid */}
+        <div className="grid grid-cols-2 gap-2">
           {statCards.map((stat, index) => (
             <motion.div
               key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{ delay: index * 0.05 }}
             >
               <Card className="border-border">
-                <CardContent className="p-4">
-                  <div className={`inline-flex rounded-lg ${stat.bgColor} p-2 mb-2`}>
-                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                <CardContent className="p-3">
+                  <div className={`inline-flex rounded-md ${stat.bgColor} p-1.5 mb-1.5`}>
+                    <stat.icon className={`h-3.5 w-3.5 ${stat.color}`} />
                   </div>
-                  <p className="font-heading text-2xl font-bold">{stat.value}</p>
+                  <p className="font-heading text-xl font-bold">{stat.value}</p>
                   <p className="text-xs text-muted-foreground">{stat.label}</p>
                 </CardContent>
               </Card>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
 
         {/* Weekly Activity Chart */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.15 }}
         >
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Calendar className="h-4 w-4 text-primary" />
+            <CardHeader className="p-3 pb-1">
+              <CardTitle className="flex items-center gap-1.5 text-sm">
+                <Calendar className="h-3.5 w-3.5 text-primary" />
                 Weekly Activity
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-48">
+            <CardContent className="p-3 pt-0">
+              <div className="h-32">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={weeklyData}>
                     <XAxis
                       dataKey="day"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                      width={20}
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                     />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
                         borderRadius: "0.5rem",
+                        fontSize: "12px",
                       }}
                     />
                     <Bar
                       dataKey="signs"
                       fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
+                      radius={[3, 3, 0, 0]}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -280,31 +278,30 @@ export default function StatsPage() {
 
         {/* Accuracy Trend Chart - Premium Only */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.2 }}
         >
           <Card className={!isPremium ? "relative overflow-hidden" : ""}>
             {!isPremium && (
               <div className="absolute inset-0 z-10 flex items-center justify-center bg-card/80 backdrop-blur-sm">
-                <div className="text-center p-4">
-                  <Lock className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                  <p className="text-sm font-medium">Premium Feature</p>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Unlock accuracy trends
-                  </p>
-                  <PremiumButton />
+                <div className="text-center p-3">
+                  <Lock className="mx-auto h-6 w-6 text-muted-foreground mb-1.5" />
+                  <p className="text-xs font-medium">Premium Feature</p>
+                  <div className="mt-2">
+                    <PremiumButton />
+                  </div>
                 </div>
               </div>
             )}
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <TrendingUp className="h-4 w-4 text-success" />
+            <CardHeader className="p-3 pb-1">
+              <CardTitle className="flex items-center gap-1.5 text-sm">
+                <TrendingUp className="h-3.5 w-3.5 text-success" />
                 Accuracy Trend
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="h-48">
+            <CardContent className="p-3 pt-0">
+              <div className="h-32">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={accuracyData}>
                     <CartesianGrid
@@ -315,19 +312,21 @@ export default function StatsPage() {
                       dataKey="day"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
                       domain={[0, 100]}
-                      tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                      width={25}
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                     />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
                         borderRadius: "0.5rem",
+                        fontSize: "12px",
                       }}
                     />
                     <Line
@@ -335,7 +334,7 @@ export default function StatsPage() {
                       dataKey="accuracy"
                       stroke="hsl(var(--success))"
                       strokeWidth={2}
-                      dot={{ fill: "hsl(var(--success))" }}
+                      dot={{ fill: "hsl(var(--success))", r: 3 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -346,37 +345,37 @@ export default function StatsPage() {
 
         {/* Top Signs */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.25 }}
         >
           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Award className="h-4 w-4 text-accent" />
+            <CardHeader className="p-3 pb-1">
+              <CardTitle className="flex items-center gap-1.5 text-sm">
+                <Award className="h-3.5 w-3.5 text-accent" />
                 Most Used Signs
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 pt-0">
               {topSigns.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {topSigns.map((sign, index) => (
-                    <div key={sign.text} className="flex items-center gap-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                    <div key={sign.text} className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                         {index + 1}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="font-medium truncate">{sign.text}</p>
-                          <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                          <p className="text-xs font-medium truncate">{sign.text}</p>
+                          <span className="text-xs text-muted-foreground shrink-0 ml-1">
                             {sign.count}x
                           </span>
                         </div>
-                        <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                        <div className="mt-0.5 h-1.5 w-full overflow-hidden rounded-full bg-muted">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${sign.percentage}%` }}
-                            transition={{ delay: 0.5 + index * 0.1, duration: 0.5 }}
+                            transition={{ delay: 0.3 + index * 0.05, duration: 0.4 }}
                             className="h-full rounded-full bg-primary"
                           />
                         </div>
@@ -385,9 +384,9 @@ export default function StatsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <Hand className="mx-auto h-8 w-8 text-muted-foreground/50" />
-                  <p className="mt-2 text-sm text-muted-foreground">
+                <div className="text-center py-4">
+                  <Hand className="mx-auto h-6 w-6 text-muted-foreground/50" />
+                  <p className="mt-1 text-xs text-muted-foreground">
                     No signs translated yet
                   </p>
                 </div>
@@ -399,25 +398,24 @@ export default function StatsPage() {
         {/* Premium Upsell */}
         {!isPremium && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.3 }}
           >
             <Card className="border-accent/30 bg-gradient-to-br from-accent/5 to-accent/10">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-full bg-accent/20 p-3">
-                    <TrendingUp className="h-6 w-6 text-accent" />
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-accent/20 p-2">
+                    <TrendingUp className="h-5 w-5 text-accent" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-heading text-lg font-semibold">
-                      Unlock Premium Stats
+                    <h3 className="font-heading text-sm font-semibold">
+                      Unlock Premium
                     </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Get detailed insights, accuracy trends, weekly reports, and
-                      personalized recommendations.
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Get detailed insights and accuracy trends.
                     </p>
-                    <div className="mt-4">
+                    <div className="mt-2">
                       <PremiumButton />
                     </div>
                   </div>

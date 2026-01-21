@@ -318,214 +318,194 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background pb-16 md:pb-0">
-      {/* Header */}
-      <header className="shrink-0 border-b border-border bg-card/80 backdrop-blur-lg">
-        <div className="container mx-auto flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-primary">
-              <Hand className="h-4 w-4 text-primary-foreground" />
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
+      {/* Header - Compact 48px */}
+      <header className="shrink-0 border-b border-border bg-card/80 backdrop-blur-lg safe-area-top">
+        <div className="flex h-12 items-center justify-between px-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-primary">
+              <Hand className="h-3.5 w-3.5 text-primary-foreground" />
             </div>
-            <span className="font-heading text-lg font-bold">KSL Translator</span>
+            <span className="font-heading text-base font-bold">KSL</span>
             <PremiumBadge size="sm" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <PremiumButton />
             <Link to="/history">
-              <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
                 <History className="h-4 w-4" />
               </Button>
             </Link>
             <Link to="/profile">
-              <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
                 <Settings className="h-4 w-4" />
               </Button>
             </Link>
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleLogout}>
-              <LogOut className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </header>
 
-      {/* Main Content - Full Camera */}
-      <main className="flex min-h-0 flex-1">
-        {/* Camera Section - Full width */}
-        <div className="relative flex-1">
-          {cameraLoading ? (
-            <div className="flex h-full items-center justify-center bg-muted">
-              <div className="text-center">
-                <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
-                <p className="mt-3 text-sm text-muted-foreground">Loading camera...</p>
-              </div>
+      {/* Main Content - Camera fills viewport */}
+      <main className="relative flex-1 min-h-0">
+        {cameraLoading ? (
+          <div className="flex h-full items-center justify-center bg-muted">
+            <div className="text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+              <p className="mt-2 text-sm text-muted-foreground">Loading camera...</p>
             </div>
-          ) : cameraError ? (
-            <div className="flex h-full items-center justify-center bg-muted">
-              <div className="text-center">
-                <CameraOff className="mx-auto h-10 w-10 text-destructive" />
-                <p className="mt-3 text-sm text-destructive">{cameraError}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-3"
-                  onClick={() => window.location.reload()}
-                >
-                  Retry
-                </Button>
-              </div>
+          </div>
+        ) : cameraError ? (
+          <div className="flex h-full items-center justify-center bg-muted">
+            <div className="text-center px-4">
+              <CameraOff className="mx-auto h-8 w-8 text-destructive" />
+              <p className="mt-2 text-sm text-destructive">{cameraError}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => window.location.reload()}
+              >
+                Retry
+              </Button>
             </div>
-          ) : (
-            <div className="camera-container relative h-full">
-              <Webcam
-                ref={webcamRef}
-                className="h-full w-full object-cover"
-                mirrored
-                videoConstraints={{
-                  facingMode: "user",
-                  width: 1280,
-                  height: 720,
-                }}
-                onUserMediaError={() => setCameraError("Camera access denied")}
-              />
-              <canvas
-                ref={canvasRef}
-                className="absolute inset-0 h-full w-full object-cover"
-                style={{ transform: "scaleX(-1)" }}
-              />
+          </div>
+        ) : (
+          <div className="camera-container relative h-full">
+            <Webcam
+              ref={webcamRef}
+              className="h-full w-full object-cover"
+              mirrored
+              videoConstraints={{
+                facingMode: "user",
+                width: { ideal: 720 },
+                height: { ideal: 1280 },
+              }}
+              onUserMediaError={() => setCameraError("Camera access denied")}
+            />
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ transform: "scaleX(-1)" }}
+            />
 
-              {/* Hand detection indicator */}
-              <AnimatePresence>
-                {handDetected && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 pointer-events-none ring-4 ring-inset ring-success/30"
-                  />
-                )}
-              </AnimatePresence>
-
-              {/* Two-Hand Overlay */}
-              <TwoHandOverlay
-                isTwoHanded={isTwoHanded}
-                isPremium={isPremium}
-                handDetected={handDetected}
-              />
-
-              {/* Stats button */}
-              <Link to="/stats" className="absolute top-4 right-4 z-20">
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-sm shadow-lg hover:bg-card"
-                >
-                  <BarChart3 className="h-5 w-5" />
-                </Button>
-              </Link>
-
-              {/* Status badge */}
-              <div className="absolute left-4 top-4">
-                <div
-                  className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium backdrop-blur-sm ${
-                    handDetected
-                      ? isTwoHanded
-                        ? "bg-primary/20 text-primary"
-                        : "bg-success/20 text-success"
-                      : "bg-muted/80 text-muted-foreground"
-                  }`}
-                >
-                  <Hand className="h-4 w-4" />
-                  {handDetected 
-                    ? isTwoHanded 
-                      ? "2 Hands Detected" 
-                      : "Hand Detected" 
-                    : "Show Your Hand"}
-                  {isPremium && isTwoHanded && (
-                    <span className="text-xs opacity-70">Premium</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Translation Output - Overlay at bottom */}
-              <div className="absolute inset-x-0 bottom-0 p-4">
+            {/* Hand detection indicator */}
+            <AnimatePresence>
+              {handDetected && (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: currentSign ? 1 : 0.7, y: 0 }}
-                  className="rounded-xl border border-border bg-card/95 p-4 backdrop-blur-sm"
-                >
-                  {currentSign ? (
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h2 className="truncate font-heading text-2xl font-bold">
-                            {currentSign.sign}
-                          </h2>
-                          {lastSaved === currentSign.sign && (
-                            <Check className="h-4 w-4 shrink-0 text-success" />
-                          )}
-                        </div>
-                        <div className="mt-1 flex items-center gap-2">
-                          <span
-                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                              confidenceLevel === "high"
-                                ? "bg-success/10 text-success"
-                                : confidenceLevel === "medium"
-                                ? "bg-warning/10 text-warning"
-                                : "bg-destructive/10 text-destructive"
-                            }`}
-                          >
-                            {Math.round(currentSign.confidence)}%
-                          </span>
-                          {lastSaved === currentSign.sign && (
-                            <span className="text-xs text-muted-foreground">Auto-saved</span>
-                          )}
-                        </div>
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 pointer-events-none ring-2 ring-inset ring-success/40"
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Two-Hand Overlay */}
+            <TwoHandOverlay
+              isTwoHanded={isTwoHanded}
+              isPremium={isPremium}
+              handDetected={handDetected}
+            />
+
+            {/* Stats button - top right */}
+            <Link to="/stats" className="absolute top-3 right-3 z-20">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm shadow-md"
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+            </Link>
+
+            {/* Status badge - top left */}
+            <div className="absolute left-3 top-3">
+              <div
+                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium backdrop-blur-sm ${
+                  handDetected
+                    ? isTwoHanded
+                      ? "bg-primary/20 text-primary"
+                      : "bg-success/20 text-success"
+                    : "bg-muted/80 text-muted-foreground"
+                }`}
+              >
+                <Hand className="h-3.5 w-3.5" />
+                {handDetected 
+                  ? isTwoHanded 
+                    ? "2 Hands" 
+                    : "Hand Detected" 
+                  : "Show Hand"}
+              </div>
+            </div>
+
+            {/* Translation Output - Overlay at bottom */}
+            <div className="absolute inset-x-0 bottom-0 p-3 pb-[calc(0.75rem+64px)] md:pb-3">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: currentSign ? 1 : 0.8, y: 0 }}
+                className="rounded-lg border border-border bg-card/95 p-3 backdrop-blur-sm"
+              >
+                {currentSign ? (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h2 className="truncate font-heading text-xl font-bold">
+                          {currentSign.sign}
+                        </h2>
+                        {lastSaved === currentSign.sign && (
+                          <Check className="h-4 w-4 shrink-0 text-success" />
+                        )}
                       </div>
-                      <div className="flex shrink-0 gap-2">
-                        <Button
-                          variant={isPlaying ? "accent" : "outline"}
-                          size="icon"
-                          className="h-10 w-10"
-                          onClick={handleSpeak}
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                            confidenceLevel === "high"
+                              ? "bg-success/10 text-success"
+                              : confidenceLevel === "medium"
+                              ? "bg-warning/10 text-warning"
+                              : "bg-destructive/10 text-destructive"
+                          }`}
                         >
-                          {isPlaying ? (
-                            <Pause className="h-4 w-4" />
-                          ) : (
-                            <Play className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-10 w-10"
-                          onClick={() => setVolume((v) => (v === 0 ? 1 : 0))}
-                        >
-                          {volume === 0 ? (
-                            <VolumeX className="h-4 w-4" />
-                          ) : (
-                            <Volume2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-10 w-10"
-                          onClick={handleReset}
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
+                          {Math.round(currentSign.confidence)}%
+                        </span>
+                        {lastSaved === currentSign.sign && (
+                          <span className="text-xs text-muted-foreground">Saved</span>
+                        )}
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-center text-muted-foreground">
-                      Show your hand gestures to start translating
-                    </p>
-                  )}
-                </motion.div>
-              </div>
+                    <div className="flex shrink-0 gap-1.5">
+                      <Button
+                        variant={isPlaying ? "accent" : "outline"}
+                        size="icon"
+                        className="h-9 w-9"
+                        onClick={handleSpeak}
+                      >
+                        {isPlaying ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9"
+                        onClick={handleReset}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2 py-1 text-muted-foreground">
+                    <Hand className="h-5 w-5" />
+                    <p className="text-sm">Show hand gestures to translate</p>
+                  </div>
+                )}
+              </motion.div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
 
       {/* Mobile Navigation */}

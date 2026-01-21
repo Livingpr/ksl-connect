@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
+import { MobileNav } from "@/components/layout/MobileNav";
 import {
   getTranslations,
   searchTranslations,
@@ -18,14 +19,11 @@ import {
   Search,
   Star,
   Trash2,
-  Share2,
-  Calendar,
   Clock,
   Hand,
   Download,
   Grid,
   List,
-  Filter,
 } from "lucide-react";
 
 type FilterType = "all" | "today" | "week" | "favorites";
@@ -131,108 +129,105 @@ export default function HistoryPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
+    <div className="flex h-[100dvh] flex-col bg-background">
+      {/* Header - Compact 48px */}
+      <header className="shrink-0 border-b border-border bg-card/80 backdrop-blur-lg safe-area-top">
+        <div className="flex h-12 items-center justify-between px-3">
+          <div className="flex items-center gap-2">
             <Link to="/dashboard">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <h1 className="font-heading text-xl font-bold">Translation History</h1>
+            <h1 className="font-heading text-base font-bold">History</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportCSV}>
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-          </div>
+          <Button variant="ghost" size="sm" className="h-8 px-2" onClick={handleExportCSV}>
+            <Download className="mr-1 h-3.5 w-3.5" />
+            Export
+          </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
-        {/* Search & Filters */}
-        <div className="mb-6 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search translations..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10"
-            />
+      {/* Search & Filters - Compact */}
+      <div className="shrink-0 border-b border-border bg-card px-3 py-2 space-y-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="h-9 pl-8 text-sm"
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex gap-1.5 overflow-x-auto">
+            {filters.map((f) => (
+              <Button
+                key={f.value}
+                variant={filter === f.value ? "default" : "outline"}
+                size="sm"
+                className="h-7 px-2.5 text-xs shrink-0"
+                onClick={() => setFilter(f.value)}
+              >
+                {f.label}
+              </Button>
+            ))}
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap gap-2">
-              {filters.map((f) => (
-                <Button
-                  key={f.value}
-                  variant={filter === f.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setFilter(f.value)}
-                >
-                  {f.label}
-                </Button>
-              ))}
-            </div>
-            <div className="flex gap-1 rounded-lg border border-border p-1">
-              <Button
-                variant={viewMode === "list" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setViewMode("list")}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "grid" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setViewMode("grid")}
-              >
-                <Grid className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="flex gap-0.5 rounded-md border border-border p-0.5 shrink-0 ml-2">
+            <Button
+              variant={viewMode === "list" ? "secondary" : "ghost"}
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => setViewMode("list")}
+            >
+              <List className="h-3 w-3" />
+            </Button>
+            <Button
+              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => setViewMode("grid")}
+            >
+              <Grid className="h-3 w-3" />
+            </Button>
           </div>
         </div>
+      </div>
 
-        {/* Translations List/Grid */}
+      {/* Translations List - Scrollable */}
+      <main className="flex-1 overflow-y-auto p-3 pb-20">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : translations.length > 0 ? (
           <div
             className={
               viewMode === "grid"
-                ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-                : "space-y-3"
+                ? "grid grid-cols-2 gap-2"
+                : "space-y-2"
             }
           >
             {translations.map((translation, index) => (
               <motion.div
                 key={translation.id}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className={`group rounded-xl border border-border bg-card transition-all hover:border-primary/30 hover:shadow-md ${
-                  viewMode === "grid" ? "p-4" : "p-4"
-                }`}
+                transition={{ delay: index * 0.03 }}
+                className="group rounded-lg border border-border bg-card p-3 transition-colors hover:border-primary/30"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted">
-                      <Hand className="h-6 w-6 text-muted-foreground" />
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
+                      <Hand className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <div>
-                      <h3 className="font-heading text-lg font-semibold">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-heading text-sm font-semibold truncate">
                         {translation.text}
                       </h3>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                      <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                         <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                          className={`rounded-full px-1.5 py-0.5 font-medium ${
                             translation.confidence >= 80
                               ? "bg-success/10 text-success"
                               : translation.confidence >= 60
@@ -242,22 +237,22 @@ export default function HistoryPage() {
                         >
                           {translation.confidence}%
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-0.5">
                           <Clock className="h-3 w-3" />
-                          {new Date(translation.timestamp).toLocaleString()}
+                          {new Date(translation.timestamp).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div className="flex gap-0.5 shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-7 w-7"
                       onClick={() => handleToggleFavorite(translation.id!)}
                     >
                       <Star
-                        className={`h-4 w-4 ${
+                        className={`h-3.5 w-3.5 ${
                           translation.isFavorite
                             ? "fill-warning text-warning"
                             : "text-muted-foreground"
@@ -267,10 +262,10 @@ export default function HistoryPage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-7 w-7"
                       onClick={() => handleDelete(translation.id!)}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </Button>
                   </div>
                 </div>
@@ -278,24 +273,27 @@ export default function HistoryPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-border p-12 text-center">
-            <Hand className="mx-auto h-16 w-16 text-muted-foreground/30" />
-            <h3 className="mt-4 font-heading text-lg font-semibold">No translations found</h3>
-            <p className="mt-2 text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border p-8 text-center">
+            <Hand className="mx-auto h-10 w-10 text-muted-foreground/30" />
+            <h3 className="mt-3 font-heading text-sm font-semibold">No translations</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
               {searchQuery
-                ? "Try a different search term"
+                ? "Try a different search"
                 : filter === "favorites"
                 ? "Star translations to see them here"
-                : "Start translating to build your history"}
+                : "Start translating to build history"}
             </p>
             <Link to="/camera">
-              <Button variant="hero" className="mt-4">
+              <Button variant="hero" size="sm" className="mt-3">
                 Start Translating
               </Button>
             </Link>
           </div>
         )}
       </main>
+
+      {/* Mobile Navigation */}
+      <MobileNav />
     </div>
   );
 }
