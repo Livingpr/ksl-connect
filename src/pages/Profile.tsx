@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
+import { MobileNav } from "@/components/layout/MobileNav";
 import type { UserRole } from "@/types";
 import {
   ArrowLeft,
@@ -14,7 +15,6 @@ import {
   Volume2,
   Wifi,
   WifiOff,
-  Globe,
   HelpCircle,
   Info,
   LogOut,
@@ -68,203 +68,195 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-card/80 backdrop-blur-lg">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
+    <div className="flex h-[100dvh] flex-col bg-background">
+      {/* Header - Compact 48px */}
+      <header className="shrink-0 border-b border-border bg-card/80 backdrop-blur-lg safe-area-top">
+        <div className="flex h-12 items-center justify-between px-3">
+          <div className="flex items-center gap-2">
             <Link to="/dashboard">
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <h1 className="font-heading text-xl font-bold">Profile & Settings</h1>
+            <h1 className="font-heading text-base font-bold">Profile</h1>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto max-w-2xl px-4 py-8">
+      {/* Main Content - Scrollable */}
+      <main className="flex-1 overflow-y-auto p-3 pb-20 space-y-3">
         {/* Profile Card */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 rounded-xl border border-border bg-card p-6"
+          className="rounded-lg border border-border bg-card p-4"
         >
-          <div className="flex items-start gap-6">
+          <div className="flex items-start gap-3">
             <div className="relative">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-primary text-3xl font-bold text-primary-foreground">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-xl font-bold text-primary-foreground">
                 {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
               </div>
-              <button className="absolute -bottom-1 -right-1 rounded-full border-2 border-card bg-muted p-1.5 hover:bg-muted/80">
-                <Camera className="h-4 w-4" />
+              <button className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-card bg-muted p-1 hover:bg-muted/80">
+                <Camera className="h-3 w-3" />
               </button>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               {isEditing ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
-                    <Label htmlFor="name">Display Name</Label>
+                    <Label htmlFor="name" className="text-xs">Display Name</Label>
                     <Input
                       id="name"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="mt-1"
+                      className="mt-1 h-8 text-sm"
                     />
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={handleSave} disabled={isSaving}>
+                    <Button size="sm" className="h-7" onClick={handleSave} disabled={isSaving}>
                       {isSaving ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                       ) : (
-                        <Save className="mr-2 h-4 w-4" />
+                        <Save className="mr-1 h-3 w-3" />
                       )}
                       Save
                     </Button>
-                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                    <Button variant="outline" size="sm" className="h-7" onClick={() => setIsEditing(false)}>
                       Cancel
                     </Button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <h2 className="font-heading text-2xl font-bold">{user?.displayName}</h2>
-                  <p className="text-muted-foreground">{user?.email}</p>
-                  <div className="mt-2 inline-block rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                    {roleLabels[user?.role || "student"]}
+                  <h2 className="font-heading text-lg font-bold truncate">{user?.displayName}</h2>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      {roleLabels[user?.role || "student"]}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      Edit
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="ml-4"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    Edit Profile
-                  </Button>
                 </>
               )}
             </div>
           </div>
         </motion.div>
 
-        {/* Settings Sections */}
-        <div className="space-y-6">
-          {/* TTS Settings */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-xl border border-border bg-card p-6"
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-lg bg-primary/10 p-2">
-                <Volume2 className="h-5 w-5 text-primary" />
-              </div>
-              <h3 className="font-heading text-lg font-semibold">Voice Settings</h3>
+        {/* TTS Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="rounded-lg border border-border bg-card p-3"
+        >
+          <div className="mb-2 flex items-center gap-2">
+            <div className="rounded-md bg-primary/10 p-1.5">
+              <Volume2 className="h-3.5 w-3.5 text-primary" />
             </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Auto-play TTS</p>
-                  <p className="text-sm text-muted-foreground">
-                    Automatically speak translations
-                  </p>
-                </div>
-                <Switch checked={autoPlayTTS} onCheckedChange={setAutoPlayTTS} />
+            <h3 className="font-heading text-sm font-semibold">Voice Settings</h3>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Auto-play TTS</p>
+                <p className="text-xs text-muted-foreground">Auto speak translations</p>
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Language</p>
-                  <p className="text-sm text-muted-foreground">
-                    Voice output language
-                  </p>
-                </div>
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as "en-US" | "sw-KE")}
-                  className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-                >
-                  <option value="en-US">English</option>
-                  <option value="sw-KE">Swahili</option>
-                </select>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Offline Settings */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="rounded-xl border border-border bg-card p-6"
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-lg bg-success/10 p-2">
-                <WifiOff className="h-5 w-5 text-success" />
-              </div>
-              <h3 className="font-heading text-lg font-semibold">Offline Mode</h3>
+              <Switch checked={autoPlayTTS} onCheckedChange={setAutoPlayTTS} />
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Enable Offline Mode</p>
-                <p className="text-sm text-muted-foreground">
-                  Cache model and assets for offline use
-                </p>
+                <p className="text-sm font-medium">Language</p>
               </div>
-              <Switch checked={offlineMode} onCheckedChange={setOfflineMode} />
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as "en-US" | "sw-KE")}
+                className="rounded border border-border bg-background px-2 py-1 text-xs"
+              >
+                <option value="en-US">English</option>
+                <option value="sw-KE">Swahili</option>
+              </select>
             </div>
-            {offlineMode && (
-              <div className="mt-4 rounded-lg bg-success/10 p-3 text-sm text-success">
-                <Wifi className="mb-1 inline h-4 w-4" /> Model cached and ready for offline use
-              </div>
-            )}
-          </motion.div>
+          </div>
+        </motion.div>
 
-          {/* Help & About */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="rounded-xl border border-border bg-card p-6"
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <div className="rounded-lg bg-muted p-2">
-                <Settings className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <h3 className="font-heading text-lg font-semibold">More</h3>
+        {/* Offline Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-lg border border-border bg-card p-3"
+        >
+          <div className="mb-2 flex items-center gap-2">
+            <div className="rounded-md bg-success/10 p-1.5">
+              <WifiOff className="h-3.5 w-3.5 text-success" />
             </div>
-            <div className="space-y-2">
-              <button className="flex w-full items-center justify-between rounded-lg p-3 text-left hover:bg-muted">
-                <div className="flex items-center gap-3">
-                  <HelpCircle className="h-5 w-5 text-muted-foreground" />
-                  <span>Tutorial</span>
-                </div>
-              </button>
-              <button className="flex w-full items-center justify-between rounded-lg p-3 text-left hover:bg-muted">
-                <div className="flex items-center gap-3">
-                  <Info className="h-5 w-5 text-muted-foreground" />
-                  <span>About KSL Translator</span>
-                </div>
-              </button>
+            <h3 className="font-heading text-sm font-semibold">Offline Mode</h3>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Enable Offline</p>
+              <p className="text-xs text-muted-foreground">Cache for offline use</p>
             </div>
-          </motion.div>
+            <Switch checked={offlineMode} onCheckedChange={setOfflineMode} />
+          </div>
+          {offlineMode && (
+            <div className="mt-2 rounded-md bg-success/10 p-2 text-xs text-success flex items-center gap-1.5">
+              <Wifi className="h-3 w-3" /> Ready for offline
+            </div>
+          )}
+        </motion.div>
 
-          {/* Logout */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+        {/* Help & About */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="rounded-lg border border-border bg-card p-3"
+        >
+          <div className="mb-2 flex items-center gap-2">
+            <div className="rounded-md bg-muted p-1.5">
+              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+            </div>
+            <h3 className="font-heading text-sm font-semibold">More</h3>
+          </div>
+          <div className="space-y-1">
+            <button className="flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-muted">
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+              Tutorial
+            </button>
+            <button className="flex w-full items-center gap-2.5 rounded-md p-2 text-left text-sm hover:bg-muted">
+              <Info className="h-4 w-4 text-muted-foreground" />
+              About KSL Translator
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Logout */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Button
+            variant="outline"
+            className="w-full h-10 border-destructive/30 text-destructive hover:bg-destructive/10"
+            onClick={handleLogout}
           >
-            <Button
-              variant="outline"
-              className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
-              onClick={handleLogout}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
-          </motion.div>
-        </div>
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
+          </Button>
+        </motion.div>
       </main>
+
+      {/* Mobile Navigation */}
+      <MobileNav />
     </div>
   );
 }

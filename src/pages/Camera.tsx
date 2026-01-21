@@ -266,18 +266,18 @@ export default function CameraPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background pb-16 md:pb-0">
-      {/* Header */}
-      <header className="shrink-0 flex items-center justify-between border-b border-border bg-card px-4 py-3">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
+      {/* Header - Compact 44px */}
+      <header className="shrink-0 flex items-center justify-between border-b border-border bg-card px-3 py-2 safe-area-top">
         <Link to="/dashboard">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
+          <Button variant="ghost" size="sm" className="h-8 px-2">
+            <ArrowLeft className="mr-1 h-4 w-4" />
             Back
           </Button>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <div
-            className={`flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ${
+            className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
               handDetected
                 ? isTwoHanded
                   ? "bg-primary/10 text-primary"
@@ -285,23 +285,21 @@ export default function CameraPage() {
                 : "bg-muted text-muted-foreground"
             }`}
           >
-            <Hand className="h-4 w-4" />
+            <Hand className="h-3.5 w-3.5" />
             {handDetected 
               ? isTwoHanded 
-                ? "2 Hands Detected" 
-                : "Hand Detected" 
+                ? "2 Hands" 
+                : "Detected" 
               : "No Hand"}
-            {!isPremium && handDetected && (
-              <span className="text-xs opacity-70">(1 hand max)</span>
-            )}
           </div>
           <PremiumButton />
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8"
             onClick={() => setShowSettings(!showSettings)}
           >
-            <Settings2 className="h-5 w-5" />
+            <Settings2 className="h-4 w-4" />
           </Button>
         </div>
       </header>
@@ -311,18 +309,19 @@ export default function CameraPage() {
         {isLoading ? (
           <div className="flex h-full items-center justify-center bg-muted">
             <div className="text-center">
-              <Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" />
-              <p className="mt-4 text-muted-foreground">Loading hand detection...</p>
+              <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
+              <p className="mt-3 text-sm text-muted-foreground">Loading...</p>
             </div>
           </div>
         ) : cameraError ? (
-          <div className="flex h-full items-center justify-center bg-muted">
+          <div className="flex h-full items-center justify-center bg-muted px-4">
             <div className="text-center">
-              <CameraOff className="mx-auto h-12 w-12 text-destructive" />
-              <p className="mt-4 text-destructive">{cameraError}</p>
+              <CameraOff className="mx-auto h-10 w-10 text-destructive" />
+              <p className="mt-3 text-sm text-destructive">{cameraError}</p>
               <Button
                 variant="outline"
-                className="mt-4"
+                size="sm"
+                className="mt-3"
                 onClick={() => window.location.reload()}
               >
                 Retry
@@ -337,8 +336,8 @@ export default function CameraPage() {
               mirrored
               videoConstraints={{
                 facingMode: "user",
-                width: 1280,
-                height: 720,
+                width: { ideal: 720 },
+                height: { ideal: 1280 },
               }}
               onUserMediaError={() => setCameraError("Camera access denied")}
             />
@@ -355,7 +354,7 @@ export default function CameraPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="absolute inset-0 pointer-events-none ring-4 ring-inset ring-success/30"
+                  className="absolute inset-0 pointer-events-none ring-2 ring-inset ring-success/40"
                 />
               )}
             </AnimatePresence>
@@ -368,39 +367,39 @@ export default function CameraPage() {
             />
 
             {/* Stats button */}
-            <Link to="/stats" className="absolute top-4 right-4 z-20">
+            <Link to="/stats" className="absolute top-3 right-3 z-20">
               <Button
                 variant="secondary"
                 size="icon"
-                className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-sm shadow-lg hover:bg-card"
+                className="h-9 w-9 rounded-full bg-card/90 backdrop-blur-sm shadow-md"
               >
-                <BarChart3 className="h-5 w-5" />
+                <BarChart3 className="h-4 w-4" />
               </Button>
             </Link>
           </div>
         )}
       </div>
 
-      {/* Output Panel - Fixed at bottom */}
+      {/* Output Panel - Fixed at bottom, above nav */}
       <motion.div
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
-        className="shrink-0 border-t border-border bg-card p-4"
+        className="shrink-0 border-t border-border bg-card p-3 mb-16 md:mb-0"
       >
         {currentSign ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Translation Result */}
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="font-heading text-2xl font-bold">{currentSign.sign}</h2>
+                  <h2 className="font-heading text-xl font-bold">{currentSign.sign}</h2>
                   {lastSaved === currentSign.sign && (
-                    <Check className="h-5 w-5 text-success" />
+                    <Check className="h-4 w-4 text-success" />
                   )}
                 </div>
-                <div className="mt-1 flex items-center gap-2">
+                <div className="mt-0.5 flex items-center gap-2">
                   <span
-                    className={`rounded-full px-3 py-1 text-sm font-medium ${
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                       confidenceLevel === "high"
                         ? "bg-success/10 text-success"
                         : confidenceLevel === "medium"
@@ -408,45 +407,46 @@ export default function CameraPage() {
                         : "bg-destructive/10 text-destructive"
                     }`}
                   >
-                    {Math.round(currentSign.confidence)}% confidence
+                    {Math.round(currentSign.confidence)}%
                   </span>
                   {lastSaved === currentSign.sign && (
-                    <span className="text-sm text-muted-foreground">Auto-saved</span>
+                    <span className="text-xs text-muted-foreground">Saved</span>
                   )}
                 </div>
               </div>
-              <Button variant="outline" size="icon" onClick={handleReset}>
-                <RotateCcw className="h-5 w-5" />
+              <Button variant="outline" size="icon" className="h-8 w-8" onClick={handleReset}>
+                <RotateCcw className="h-4 w-4" />
               </Button>
             </div>
 
-            {/* TTS Controls */}
-            <div className="flex items-center gap-4 rounded-lg border border-border bg-muted/50 p-3">
+            {/* TTS Controls - Compact */}
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/50 p-2">
               <Button
                 variant={isPlaying ? "accent" : "default"}
                 size="icon"
+                className="h-8 w-8"
                 onClick={handleSpeak}
               >
-                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               </Button>
 
-              <div className="flex flex-1 items-center gap-4">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-1 items-center gap-3">
+                <div className="flex items-center gap-1.5">
                   {volume[0] === 0 ? (
-                    <VolumeX className="h-4 w-4 text-muted-foreground" />
+                    <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />
                   ) : (
-                    <Volume2 className="h-4 w-4 text-muted-foreground" />
+                    <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
                   )}
                   <Slider
                     value={volume}
                     onValueChange={setVolume}
                     max={1}
                     step={0.1}
-                    className="w-20"
+                    className="w-16"
                   />
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <span>{speed[0]}x</span>
                   <Slider
                     value={speed}
@@ -454,7 +454,7 @@ export default function CameraPage() {
                     min={0.5}
                     max={2}
                     step={0.25}
-                    className="w-20"
+                    className="w-14"
                   />
                 </div>
               </div>
@@ -462,17 +462,17 @@ export default function CameraPage() {
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as "en-US" | "sw-KE")}
-                className="rounded-md border border-border bg-background px-2 py-1 text-sm"
+                className="rounded border border-border bg-background px-1.5 py-0.5 text-xs"
               >
-                <option value="en-US">English</option>
-                <option value="sw-KE">Swahili</option>
+                <option value="en-US">EN</option>
+                <option value="sw-KE">SW</option>
               </select>
             </div>
           </div>
         ) : (
-          <div className="text-center py-2 text-muted-foreground">
-            <Camera className="mx-auto h-6 w-6 mb-1" />
-            <p className="text-sm">Show your hand gestures to start translating</p>
+          <div className="flex items-center justify-center gap-2 py-1 text-muted-foreground">
+            <Camera className="h-5 w-5" />
+            <p className="text-sm">Show gestures to translate</p>
           </div>
         )}
       </motion.div>
@@ -484,28 +484,28 @@ export default function CameraPage() {
             initial={{ opacity: 0, x: "100%" }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: "100%" }}
-            className="fixed right-0 top-0 h-full w-72 border-l border-border bg-card p-6 shadow-lg z-50"
+            className="fixed right-0 top-0 h-full w-64 border-l border-border bg-card p-4 shadow-lg z-50 safe-area-top"
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-heading text-lg font-semibold">Settings</h3>
-              <Button variant="ghost" size="icon" onClick={() => setShowSettings(false)}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-heading text-base font-semibold">Settings</h3>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSettings(false)}>
                 ×
               </Button>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Default Language</label>
+                <label className="text-xs font-medium">Language</label>
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as "en-US" | "sw-KE")}
-                  className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2"
+                  className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
                 >
                   <option value="en-US">English</option>
                   <option value="sw-KE">Swahili</option>
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium">Speech Speed</label>
+                <label className="text-xs font-medium">Speed: {speed[0]}x</label>
                 <Slider
                   value={speed}
                   onValueChange={setSpeed}
@@ -514,10 +514,9 @@ export default function CameraPage() {
                   step={0.25}
                   className="mt-2"
                 />
-                <p className="mt-1 text-sm text-muted-foreground">{speed[0]}x</p>
               </div>
               <div>
-                <label className="text-sm font-medium">Volume</label>
+                <label className="text-xs font-medium">Volume</label>
                 <Slider
                   value={volume}
                   onValueChange={setVolume}
@@ -525,16 +524,12 @@ export default function CameraPage() {
                   step={0.1}
                   className="mt-2"
                 />
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {Math.round(volume[0] * 100)}%
-                </p>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Mobile Navigation */}
       <MobileNav />
     </div>
   );
