@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Camera, History, Volume2, WifiOff, Hand, ArrowRight, Download } from "lucide-react";
+import { Camera, History, Volume2, WifiOff, Hand, ArrowRight, LogIn } from "lucide-react";
 
 const features = [
   {
@@ -83,8 +83,7 @@ export default function Landing() {
               </Link>
               <Link to="/auth" className="w-full sm:w-auto">
                 <Button variant="hero-outline" size="lg" className="w-full">
-                  <Download className="mr-2 h-4 w-4" />
-                  Install App
+                  I have an account
                 </Button>
               </Link>
             </div>
