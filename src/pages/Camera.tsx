@@ -15,6 +15,7 @@ import { getConfidenceLevel } from "@/types";
 import { PremiumButton } from "@/components/premium/PremiumButton";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { TwoHandOverlay } from "@/components/camera/TwoHandOverlay";
+import { HandPositionGuide } from "@/components/camera/HandPositionGuide";
 import {
   ArrowLeft,
   Camera,
@@ -336,8 +337,9 @@ export default function CameraPage() {
               mirrored
               videoConstraints={{
                 facingMode: "user",
-                width: { ideal: 720 },
-                height: { ideal: 1280 },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                aspectRatio: 16 / 9,
               }}
               onUserMediaError={() => setCameraError("Camera access denied")}
             />
@@ -365,6 +367,9 @@ export default function CameraPage() {
               isPremium={isPremium}
               handDetected={handDetected}
             />
+
+            {/* Hand Position Guide */}
+            <HandPositionGuide handDetected={handDetected} />
 
             {/* Stats button */}
             <Link to="/stats" className="absolute top-3 right-3 z-20">

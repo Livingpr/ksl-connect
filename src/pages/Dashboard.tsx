@@ -15,6 +15,7 @@ import { PremiumButton } from "@/components/premium/PremiumButton";
 import { PremiumBadge } from "@/components/premium/PremiumBadge";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { TwoHandOverlay } from "@/components/camera/TwoHandOverlay";
+import { HandPositionGuide } from "@/components/camera/HandPositionGuide";
 import type { Translation, TranslationStats } from "@/types";
 import { getConfidenceLevel } from "@/types";
 import {
@@ -377,8 +378,9 @@ export default function Dashboard() {
               mirrored
               videoConstraints={{
                 facingMode: "user",
-                width: { ideal: 720 },
-                height: { ideal: 1280 },
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                aspectRatio: 16 / 9,
               }}
               onUserMediaError={() => setCameraError("Camera access denied")}
             />
@@ -406,6 +408,9 @@ export default function Dashboard() {
               isPremium={isPremium}
               handDetected={handDetected}
             />
+
+            {/* Hand Position Guide */}
+            <HandPositionGuide handDetected={handDetected} />
 
             {/* Stats button - top right */}
             <Link to="/stats" className="absolute top-3 right-3 z-20">
