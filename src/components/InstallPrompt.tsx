@@ -22,34 +22,22 @@ export const InstallPrompt = () => {
     // Don't show if already installed as PWA
     if (isStandalone) return;
 
-    const dismissed = localStorage.getItem('pwa-install-dismissed');
-    const dismissedTime = localStorage.getItem('pwa-install-dismissed-time');
-    
-    // Allow re-prompt after 7 days
-    const shouldShowAgain = dismissedTime 
-      ? Date.now() - parseInt(dismissedTime) > 7 * 24 * 60 * 60 * 1000 
-      : true;
-
-    // Handle Android/Chrome install prompt
+    // Handle Android/Chrome install prompt - show every time
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      
-      if (!dismissed || shouldShowAgain) {
-        // Delay prompt slightly for better UX on first visit
-        setTimeout(() => setShowPrompt(true), 2000);
-      }
+      // Always show prompt after short delay
+      setTimeout(() => setShowPrompt(true), 1500);
     };
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Handle iOS - show custom prompt for Safari
+    // Handle iOS - show custom prompt for Safari - always show
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
     
-    if (isIOS && isSafari && isMobile && (!dismissed || shouldShowAgain)) {
-      // Show iOS-specific prompt after delay
-      setTimeout(() => setShowIOSPrompt(true), 2000);
+    if (isIOS && isSafari && isMobile) {
+      setTimeout(() => setShowIOSPrompt(true), 1500);
     }
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
@@ -70,8 +58,7 @@ export const InstallPrompt = () => {
   const handleDismiss = () => {
     setShowPrompt(false);
     setShowIOSPrompt(false);
-    localStorage.setItem('pwa-install-dismissed', 'true');
-    localStorage.setItem('pwa-install-dismissed-time', Date.now().toString());
+    // No longer persist dismissal - will show again on next visit
   };
 
   // iOS-specific install instructions
