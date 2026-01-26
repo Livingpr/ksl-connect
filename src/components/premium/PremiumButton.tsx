@@ -1,14 +1,14 @@
 import { Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
+import { usePremium } from "@/hooks/usePremium";
 import { useState } from "react";
 import { PremiumModal } from "./PremiumModal";
 
 export function PremiumButton() {
-  const { user } = useAuth();
+  const { isPremium } = usePremium();
   const [showModal, setShowModal] = useState(false);
 
-  if (user?.isPremium) {
+  if (isPremium) {
     return (
       <div className="flex items-center gap-2 rounded-full bg-gradient-accent px-4 py-2 text-sm font-semibold text-accent-foreground shadow-accent">
         <Crown className="h-4 w-4" />

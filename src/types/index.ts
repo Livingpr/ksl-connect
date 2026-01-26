@@ -1,18 +1,5 @@
-export type UserRole = 'student' | 'teacher' | 'interpreter';
-
-export type SubscriptionStatus = 'free' | 'premium_monthly' | 'premium_yearly';
-
-export interface User {
-  id: string;
-  email: string;
-  displayName: string;
-  photoURL?: string;
-  role: UserRole;
-  createdAt: Date;
-  isPremium?: boolean;
-  subscriptionStatus?: SubscriptionStatus;
-  subscriptionExpiry?: Date | null;
-}
+// Re-export UserRole from useAuth for backwards compatibility
+export type { UserRole } from '@/hooks/useAuth';
 
 export interface SignResult {
   sign: string;
