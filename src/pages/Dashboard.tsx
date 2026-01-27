@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { usePremium } from "@/hooks/usePremium";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { useAutoPlayTTS } from "@/hooks/useAutoPlayTTS";
 import { getStats, getTranslations } from "@/lib/db";
 import { predictSign, loadModel, getModelStatus } from "@/lib/mlModel";
 import { speechService } from "@/lib/tts";
@@ -51,6 +52,7 @@ export default function Dashboard() {
   const { user, profile, preferences, logout, isAuthenticated, isLoading: authLoading } = useAuth();
   const { isPremium, maxHands } = usePremium();
   const { autoSave, reset: resetAutoSave, lastSaved } = useAutoSave();
+  const { speakTranslation, reset: resetTTS, stop: stopTTS, autoPlayEnabled } = useAutoPlayTTS();
   const navigate = useNavigate();
 
   const [stats, setStats] = useState<TranslationStats>({
@@ -203,6 +205,8 @@ export default function Dashboard() {
           if (smoothedResult) {
             setCurrentSign({ sign: smoothedResult.sign, confidence: smoothedResult.confidence });
             autoSave({ sign: smoothedResult.sign, confidence: smoothedResult.confidence });
+            // Auto-play TTS for the detected sign
+            speakTranslation(smoothedResult.sign);
           }
         }
       } else {
@@ -216,6 +220,8 @@ export default function Dashboard() {
             if (smoothedResult) {
               setCurrentSign(smoothedResult);
               autoSave(smoothedResult);
+              // Auto-play TTS for the detected sign
+              speakTranslation(smoothedResult.sign);
             }
           }
         });
@@ -226,7 +232,7 @@ export default function Dashboard() {
     }
 
     ctx.restore();
-  }, [autoSave, isPremium]);
+  }, [autoSave, isPremium, speakTranslation]);
 
   useEffect(() => {
     if (!handsRef.current || cameraLoading) return;
@@ -277,6 +283,7 @@ export default function Dashboard() {
     setCurrentSign(null);
     gestureBufferRef.current.clear();
     resetAutoSave();
+    resetTTS();
   };
 
   const handleLogout = async () => {
@@ -423,8 +430,8 @@ export default function Dashboard() {
               </Button>
             </Link>
 
-            {/* Status badge - top left */}
-            <div className="absolute left-3 top-3">
+            {/* Status badges - top left */}
+            <div className="absolute left-3 top-3 flex flex-col gap-1.5">
               <div
                 className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium backdrop-blur-sm ${
                   handDetected
@@ -441,6 +448,12 @@ export default function Dashboard() {
                     : "Hand Detected" 
                   : "Show Hand"}
               </div>
+              {autoPlayEnabled && (
+                <div className="flex items-center gap-1.5 rounded-full bg-accent/20 px-2.5 py-1 text-xs font-medium text-accent backdrop-blur-sm">
+                  <Volume2 className="h-3.5 w-3.5" />
+                  Auto-speak
+                </div>
+              )}
             </div>
 
             {/* Translation Output - Overlay at bottom */}
