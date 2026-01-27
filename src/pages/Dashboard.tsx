@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePremium } from "@/hooks/usePremium";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useAutoPlayTTS } from "@/hooks/useAutoPlayTTS";
+import { useSentenceBuilder } from "@/hooks/useSentenceBuilder";
 import { getStats, getTranslations } from "@/lib/db";
 import { predictSign, loadModel, getModelStatus } from "@/lib/mlModel";
 import { speechService } from "@/lib/tts";
@@ -17,6 +18,7 @@ import { PremiumBadge } from "@/components/premium/PremiumBadge";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { TwoHandOverlay } from "@/components/camera/TwoHandOverlay";
 import { HandPositionGuide } from "@/components/camera/HandPositionGuide";
+import { SentenceBuilderOverlay } from "@/components/camera/SentenceBuilderOverlay";
 import type { Translation, TranslationStats } from "@/types";
 import { getConfidenceLevel } from "@/types";
 import {
@@ -53,6 +55,7 @@ export default function Dashboard() {
   const { isPremium, maxHands } = usePremium();
   const { autoSave, reset: resetAutoSave, lastSaved } = useAutoSave();
   const { speakTranslation, reset: resetTTS, stop: stopTTS, autoPlayEnabled } = useAutoPlayTTS();
+  const sentenceBuilder = useSentenceBuilder();
   const navigate = useNavigate();
 
   const [stats, setStats] = useState<TranslationStats>({
@@ -203,10 +206,19 @@ export default function Dashboard() {
         if (twoHandedResult) {
           const smoothedResult = twoHandedBufferRef.current.add(twoHandedResult);
           if (smoothedResult) {
-            setCurrentSign({ sign: smoothedResult.sign, confidence: smoothedResult.confidence });
-            autoSave({ sign: smoothedResult.sign, confidence: smoothedResult.confidence });
-            // Auto-play TTS for the detected sign
-            speakTranslation(smoothedResult.sign);
+            // Handle sentence mode vs word mode
+            if (sentenceBuilder.isEnabled) {
+              const { sentence } = sentenceBuilder.addSign(smoothedResult.sign, smoothedResult.confidence);
+              if (sentence) {
+                const text = sentenceBuilder.getSentenceText(sentence);
+                speakTranslation(text);
+                autoSave({ sign: text, confidence: sentence.avgConfidence });
+              }
+            } else {
+              setCurrentSign({ sign: smoothedResult.sign, confidence: smoothedResult.confidence });
+              autoSave({ sign: smoothedResult.sign, confidence: smoothedResult.confidence });
+              speakTranslation(smoothedResult.sign);
+            }
           }
         }
       } else {
@@ -218,10 +230,19 @@ export default function Dashboard() {
           if (gesture) {
             const smoothedResult = gestureBufferRef.current.add(gesture);
             if (smoothedResult) {
-              setCurrentSign(smoothedResult);
-              autoSave(smoothedResult);
-              // Auto-play TTS for the detected sign
-              speakTranslation(smoothedResult.sign);
+              // Handle sentence mode vs word mode
+              if (sentenceBuilder.isEnabled) {
+                const { sentence } = sentenceBuilder.addSign(smoothedResult.sign, smoothedResult.confidence);
+                if (sentence) {
+                  const text = sentenceBuilder.getSentenceText(sentence);
+                  speakTranslation(text);
+                  autoSave({ sign: text, confidence: sentence.avgConfidence });
+                }
+              } else {
+                setCurrentSign(smoothedResult);
+                autoSave(smoothedResult);
+                speakTranslation(smoothedResult.sign);
+              }
             }
           }
         });
@@ -232,7 +253,7 @@ export default function Dashboard() {
     }
 
     ctx.restore();
-  }, [autoSave, isPremium, speakTranslation]);
+  }, [autoSave, isPremium, speakTranslation, sentenceBuilder]);
 
   useEffect(() => {
     if (!handsRef.current || cameraLoading) return;
@@ -259,6 +280,29 @@ export default function Dashboard() {
   }, [cameraLoading]);
 
   const handleSpeak = async () => {
+    // Handle sentence mode speaking
+    if (sentenceBuilder.isEnabled && sentenceBuilder.builtSentence) {
+      const text = sentenceBuilder.getSentenceText(sentenceBuilder.builtSentence);
+      if (isPlaying) {
+        speechService.stop();
+        setIsPlaying(false);
+      } else {
+        setIsPlaying(true);
+        try {
+          await speechService.speak({
+            text,
+            lang: "en-US",
+            rate: 1,
+            volume,
+          });
+        } finally {
+          setIsPlaying(false);
+        }
+      }
+      return;
+    }
+
+    // Word mode speaking
     if (!currentSign) return;
 
     if (isPlaying) {
@@ -284,6 +328,7 @@ export default function Dashboard() {
     gestureBufferRef.current.clear();
     resetAutoSave();
     resetTTS();
+    sentenceBuilder.reset();
   };
 
   const handleLogout = async () => {
@@ -419,6 +464,22 @@ export default function Dashboard() {
             {/* Hand Position Guide */}
             <HandPositionGuide handDetected={handDetected} />
 
+            {/* Sentence Builder Overlay */}
+            <SentenceBuilderOverlay
+              isEnabled={sentenceBuilder.isEnabled}
+              currentGestures={sentenceBuilder.currentGestures}
+              builtSentence={sentenceBuilder.builtSentence}
+              sentenceText={sentenceBuilder.getSentenceText(sentenceBuilder.builtSentence)}
+              progressPercent={sentenceBuilder.progressPercent}
+              isBuildingPaused={sentenceBuilder.isBuildingPaused}
+              isPlaying={isPlaying}
+              onToggleEnabled={sentenceBuilder.toggleEnabled}
+              onCompleteSentence={sentenceBuilder.completeSentence}
+              onContinue={sentenceBuilder.continueBuilding}
+              onSpeak={handleSpeak}
+              onReset={handleReset}
+            />
+
             {/* Stats button - top right */}
             <Link to="/stats" className="absolute top-3 right-3 z-20">
               <Button
@@ -431,7 +492,7 @@ export default function Dashboard() {
             </Link>
 
             {/* Status badges - top left */}
-            <div className="absolute left-3 top-3 flex flex-col gap-1.5">
+            <div className="absolute left-3 top-14 flex flex-col gap-1.5">
               <div
                 className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium backdrop-blur-sm ${
                   handDetected
@@ -456,72 +517,74 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Translation Output - Overlay at bottom */}
-            <div className="absolute inset-x-0 bottom-0 p-3 pb-[calc(0.75rem+64px)] md:pb-3">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: currentSign ? 1 : 0.8, y: 0 }}
-                className="rounded-lg border border-border bg-card/95 p-3 backdrop-blur-sm"
-              >
-                {currentSign ? (
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h2 className="truncate font-heading text-xl font-bold">
-                          {currentSign.sign}
-                        </h2>
-                        {lastSaved === currentSign.sign && (
-                          <Check className="h-4 w-4 shrink-0 text-success" />
-                        )}
+            {/* Translation Output - Only show in Word Mode (when sentence builder is disabled) */}
+            {!sentenceBuilder.isEnabled && !sentenceBuilder.builtSentence && (
+              <div className="absolute inset-x-0 bottom-0 p-3 pb-[calc(0.75rem+64px)] md:pb-3">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: currentSign ? 1 : 0.8, y: 0 }}
+                  className="rounded-lg border border-border bg-card/95 p-3 backdrop-blur-sm"
+                >
+                  {currentSign ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h2 className="truncate font-heading text-xl font-bold">
+                            {currentSign.sign}
+                          </h2>
+                          {lastSaved === currentSign.sign && (
+                            <Check className="h-4 w-4 shrink-0 text-success" />
+                          )}
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-2">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                              confidenceLevel === "high"
+                                ? "bg-success/10 text-success"
+                                : confidenceLevel === "medium"
+                                ? "bg-warning/10 text-warning"
+                                : "bg-destructive/10 text-destructive"
+                            }`}
+                          >
+                            {Math.round(currentSign.confidence)}%
+                          </span>
+                          {lastSaved === currentSign.sign && (
+                            <span className="text-xs text-muted-foreground">Saved</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="mt-0.5 flex items-center gap-2">
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            confidenceLevel === "high"
-                              ? "bg-success/10 text-success"
-                              : confidenceLevel === "medium"
-                              ? "bg-warning/10 text-warning"
-                              : "bg-destructive/10 text-destructive"
-                          }`}
+                      <div className="flex shrink-0 gap-1.5">
+                        <Button
+                          variant={isPlaying ? "accent" : "outline"}
+                          size="icon"
+                          className="h-9 w-9"
+                          onClick={handleSpeak}
                         >
-                          {Math.round(currentSign.confidence)}%
-                        </span>
-                        {lastSaved === currentSign.sign && (
-                          <span className="text-xs text-muted-foreground">Saved</span>
-                        )}
+                          {isPlaying ? (
+                            <Pause className="h-4 w-4" />
+                          ) : (
+                            <Play className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-9 w-9"
+                          onClick={handleReset}
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex shrink-0 gap-1.5">
-                      <Button
-                        variant={isPlaying ? "accent" : "outline"}
-                        size="icon"
-                        className="h-9 w-9"
-                        onClick={handleSpeak}
-                      >
-                        {isPlaying ? (
-                          <Pause className="h-4 w-4" />
-                        ) : (
-                          <Play className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-9 w-9"
-                        onClick={handleReset}
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 py-1 text-muted-foreground">
+                      <Hand className="h-5 w-5" />
+                      <p className="text-sm">Show hand gestures to translate</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2 py-1 text-muted-foreground">
-                    <Hand className="h-5 w-5" />
-                    <p className="text-sm">Show hand gestures to translate</p>
-                  </div>
-                )}
-              </motion.div>
-            </div>
+                  )}
+                </motion.div>
+              </div>
+            )}
           </div>
         )}
       </main>
