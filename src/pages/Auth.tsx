@@ -1,93 +1,50 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth, UserRole } from "@/hooks/useAuth";
-import { Hand, Mail, Lock, User, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
-
-// Validation schemas
-const emailSchema = z.string().email("Please enter a valid email address");
-const passwordSchema = z.string().min(8, "Password must be at least 8 characters");
-const displayNameSchema = z.string().min(2, "Name must be at least 2 characters").max(100, "Name is too long");
+import { useAuth } from "@/hooks/useAuth";
+import { Hand, Mail, Lock, User, ArrowLeft, Loader2 } from "lucide-react";
+import type { UserRole } from "@/types";
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "register");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<UserRole>("student");
   
-  const { login, register, loginWithGoogle, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { login, register, loginWithGoogle, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
+    if (isAuthenticated) {
       navigate("/dashboard");
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     setIsLogin(searchParams.get("mode") !== "register");
   }, [searchParams]);
 
-  const validateForm = (): string | null => {
-    // Validate email
-    const emailResult = emailSchema.safeParse(email);
-    if (!emailResult.success) {
-      return emailResult.error.errors[0].message;
-    }
-
-    // Validate password
-    const passwordResult = passwordSchema.safeParse(password);
-    if (!passwordResult.success) {
-      return passwordResult.error.errors[0].message;
-    }
-
-    // For registration, validate display name
-    if (!isLogin) {
-      const nameResult = displayNameSchema.safeParse(displayName);
-      if (!nameResult.success) {
-        return nameResult.error.errors[0].message;
-      }
-    }
-
-    return null;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    // Validate form
-    const validationError = validateForm();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
     setIsLoading(true);
 
     try {
       if (isLogin) {
-        const { error } = await login(email, password);
-        if (error) {
-          setError(error.message);
-          return;
-        }
+        await login(email, password);
       } else {
-        const { error } = await register(email, password, displayName.trim(), role);
-        if (error) {
-          setError(error.message);
-          return;
+        if (!displayName.trim()) {
+          throw new Error("Please enter your name");
         }
+        await register(email, password, displayName, role);
       }
       navigate("/dashboard");
     } catch (err) {
@@ -101,10 +58,8 @@ export default function Auth() {
     setError("");
     setIsLoading(true);
     try {
-      const { error } = await loginWithGoogle();
-      if (error) {
-        setError(error.message);
-      }
+      await loginWithGoogle();
+      navigate("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google login failed");
     } finally {
@@ -117,14 +72,6 @@ export default function Auth() {
     { value: "teacher", label: "Teacher", description: "Teaching KSL" },
     { value: "interpreter", label: "Interpreter", description: "Professional" },
   ];
-
-  if (authLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen">
@@ -175,7 +122,6 @@ export default function Auth() {
                       onChange={(e) => setDisplayName(e.target.value)}
                       className="pl-10"
                       required={!isLogin}
-                      maxLength={100}
                     />
                   </div>
                 </div>
@@ -193,7 +139,6 @@ export default function Auth() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
                     required
-                    maxLength={255}
                   />
                 </div>
               </div>
@@ -204,31 +149,15 @@ export default function Auth() {
                   <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
+                    type="password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-10"
                     required
-                    minLength={8}
+                    minLength={6}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
                 </div>
-                {!isLogin && (
-                  <p className="text-xs text-muted-foreground">
-                    Must be at least 8 characters
-                  </p>
-                )}
               </div>
 
               {!isLogin && (
