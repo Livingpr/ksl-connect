@@ -1,17 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useAuth } from "@/hooks/useAuth";
+import { Slider } from "@/components/ui/slider";
+import { useAuth, UserRole } from "@/hooks/useAuth";
 import { MobileNav } from "@/components/layout/MobileNav";
-import type { UserRole } from "@/types";
 import {
   ArrowLeft,
-  User,
-  Settings,
   Volume2,
   Wifi,
   WifiOff,
@@ -21,17 +19,48 @@ import {
   Camera,
   Save,
   Loader2,
+  Settings,
+  Globe,
 } from "lucide-react";
 
 export default function ProfilePage() {
-  const { user, logout, updateProfile, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { 
+    user, 
+    profile, 
+    preferences, 
+    logout, 
+    updateProfile, 
+    updatePreferences,
+    isAuthenticated, 
+    isLoading: authLoading 
+  } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [displayName, setDisplayName] = useState(user?.displayName || "");
-  const [autoPlayTTS, setAutoPlayTTS] = useState(false);
+  const [displayName, setDisplayName] = useState(profile?.displayName || "");
+
+  // Local state for preferences (synced with context)
+  const [autoPlayTTS, setAutoPlayTTS] = useState(preferences?.autoPlayTts ?? true);
+  const [speechRate, setSpeechRate] = useState(preferences?.speechRate ?? 1.0);
+  const [volume, setVolume] = useState(preferences?.volume ?? 80);
+  const [language, setLanguage] = useState<"english" | "swahili">(preferences?.outputLanguage ?? "english");
   const [offlineMode, setOfflineMode] = useState(true);
-  const [language, setLanguage] = useState<"en-US" | "sw-KE">("en-US");
+
+  // Sync local state when preferences load
+  useEffect(() => {
+    if (preferences) {
+      setAutoPlayTTS(preferences.autoPlayTts);
+      setSpeechRate(preferences.speechRate);
+      setVolume(preferences.volume);
+      setLanguage(preferences.outputLanguage);
+    }
+  }, [preferences]);
+
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.displayName);
+    }
+  }, [profile]);
 
   if (authLoading) {
     return (
@@ -49,15 +78,20 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      updateProfile({ displayName });
+      await updateProfile({ displayName });
       setIsEditing(false);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handlePreferenceChange = async (key: string, value: any) => {
+    const updates: Record<string, any> = { [key]: value };
+    await updatePreferences(updates);
+  };
+
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
 
@@ -94,7 +128,7 @@ export default function ProfilePage() {
           <div className="flex items-start gap-3">
             <div className="relative">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-xl font-bold text-primary-foreground">
-                {user?.displayName?.charAt(0)?.toUpperCase() || "U"}
+                {profile?.displayName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}
               </div>
               <button className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-card bg-muted p-1 hover:bg-muted/80">
                 <Camera className="h-3 w-3" />
@@ -128,11 +162,13 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <>
-                  <h2 className="font-heading text-lg font-bold truncate">{user?.displayName}</h2>
+                  <h2 className="font-heading text-lg font-bold truncate">
+                    {profile?.displayName || user?.email?.split('@')[0] || 'User'}
+                  </h2>
                   <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                   <div className="mt-1.5 flex items-center gap-2">
                     <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      {roleLabels[user?.role || "student"]}
+                      {roleLabels[profile?.role || "student"]}
                     </span>
                     <Button
                       variant="ghost"
@@ -149,7 +185,7 @@ export default function ProfilePage() {
           </div>
         </motion.div>
 
-        {/* TTS Settings */}
+        {/* Translation Preferences */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -158,30 +194,98 @@ export default function ProfilePage() {
         >
           <div className="mb-2 flex items-center gap-2">
             <div className="rounded-md bg-primary/10 p-1.5">
-              <Volume2 className="h-3.5 w-3.5 text-primary" />
+              <Globe className="h-3.5 w-3.5 text-primary" />
             </div>
-            <h3 className="font-heading text-sm font-semibold">Voice Settings</h3>
+            <h3 className="font-heading text-sm font-semibold">Translation Preferences</h3>
           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Auto-play TTS</p>
-                <p className="text-xs text-muted-foreground">Auto speak translations</p>
-              </div>
-              <Switch checked={autoPlayTTS} onCheckedChange={setAutoPlayTTS} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Language</p>
+                <p className="text-sm font-medium">Output Language</p>
+                <p className="text-xs text-muted-foreground">Language for translations</p>
               </div>
               <select
                 value={language}
-                onChange={(e) => setLanguage(e.target.value as "en-US" | "sw-KE")}
+                onChange={(e) => {
+                  const newLang = e.target.value as "english" | "swahili";
+                  setLanguage(newLang);
+                  handlePreferenceChange("outputLanguage", newLang);
+                }}
                 className="rounded border border-border bg-background px-2 py-1 text-xs"
               >
-                <option value="en-US">English</option>
-                <option value="sw-KE">Swahili</option>
+                <option value="english">English</option>
+                <option value="swahili">Kiswahili</option>
               </select>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* TTS Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-lg border border-border bg-card p-3"
+        >
+          <div className="mb-2 flex items-center gap-2">
+            <div className="rounded-md bg-primary/10 p-1.5">
+              <Volume2 className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <h3 className="font-heading text-sm font-semibold">Voice Settings</h3>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Auto-play Speech</p>
+                <p className="text-xs text-muted-foreground">Speak translations automatically</p>
+              </div>
+              <Switch 
+                checked={autoPlayTTS} 
+                onCheckedChange={(checked) => {
+                  setAutoPlayTTS(checked);
+                  handlePreferenceChange("autoPlayTts", checked);
+                }} 
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Speech Speed</p>
+                <span className="text-xs text-muted-foreground">{speechRate}x</span>
+              </div>
+              <Slider
+                value={[speechRate]}
+                onValueChange={(value) => {
+                  setSpeechRate(value[0]);
+                }}
+                onValueCommit={(value) => {
+                  handlePreferenceChange("speechRate", value[0]);
+                }}
+                min={0.5}
+                max={2.0}
+                step={0.1}
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Volume</p>
+                <span className="text-xs text-muted-foreground">{volume}%</span>
+              </div>
+              <Slider
+                value={[volume]}
+                onValueChange={(value) => {
+                  setVolume(value[0]);
+                }}
+                onValueCommit={(value) => {
+                  handlePreferenceChange("volume", value[0]);
+                }}
+                min={0}
+                max={100}
+                step={5}
+                className="w-full"
+              />
             </div>
           </div>
         </motion.div>
@@ -190,7 +294,7 @@ export default function ProfilePage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.15 }}
           className="rounded-lg border border-border bg-card p-3"
         >
           <div className="mb-2 flex items-center gap-2">
@@ -217,7 +321,7 @@ export default function ProfilePage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
+          transition={{ delay: 0.2 }}
           className="rounded-lg border border-border bg-card p-3"
         >
           <div className="mb-2 flex items-center gap-2">
@@ -242,7 +346,7 @@ export default function ProfilePage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.25 }}
         >
           <Button
             variant="outline"

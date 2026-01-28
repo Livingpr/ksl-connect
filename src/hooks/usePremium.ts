@@ -1,11 +1,13 @@
 import { useAuth } from "./useAuth";
 
 export function usePremium() {
-  const { user } = useAuth();
+  const { profile } = useAuth();
 
-  const isPremium = user?.isPremium ?? false;
-  const subscriptionStatus = user?.subscriptionStatus ?? "free";
-  const subscriptionExpiry = user?.subscriptionExpiry ?? null;
+  // For now, premium is always false until we add subscription tables
+  // In the future, this would check subscription status from the database
+  const isPremium = false;
+  const subscriptionStatus = "free";
+  const subscriptionExpiry = null;
 
   const maxHands = isPremium ? 2 : 1;
   const maxVocabulary = isPremium ? 100 : 50;
