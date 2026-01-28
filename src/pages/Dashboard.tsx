@@ -48,7 +48,7 @@ declare global {
 }
 
 export default function Dashboard() {
-  const { user, profile, preferences, logout, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, logout, isAuthenticated, isLoading: authLoading } = useAuth();
   const { isPremium, maxHands } = usePremium();
   const { autoSave, reset: resetAutoSave, lastSaved } = useAutoSave();
   const navigate = useNavigate();
@@ -279,8 +279,8 @@ export default function Dashboard() {
     resetAutoSave();
   };
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout();
     navigate("/");
   };
 

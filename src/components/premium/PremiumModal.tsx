@@ -5,7 +5,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Check, Crown, Hand, Zap, TrendingUp, Star } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface PremiumModalProps {
@@ -54,10 +56,17 @@ const plans = [
 ];
 
 export function PremiumModal({ open, onOpenChange }: PremiumModalProps) {
+  const { updateProfile } = useAuth();
+
   const handleSubscribe = (planId: string) => {
-    // TODO: Integrate with Stripe for real payments
-    toast.info("Premium subscriptions coming soon!", {
-      description: "We're working on adding payment integration.",
+    // Mock subscription - in production would integrate with Stripe
+    updateProfile({
+      isPremium: true,
+      subscriptionStatus: planId === "yearly" ? "premium_yearly" : "premium_monthly",
+      subscriptionExpiry: new Date(Date.now() + (planId === "yearly" ? 365 : 30) * 24 * 60 * 60 * 1000),
+    });
+    toast.success("Welcome to Premium! 🎉", {
+      description: "You now have access to all premium features.",
     });
     onOpenChange(false);
   };

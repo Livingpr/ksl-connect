@@ -1,5 +1,5 @@
 import { Crown } from "lucide-react";
-import { usePremium } from "@/hooks/usePremium";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PremiumBadgeProps {
   size?: "sm" | "md";
@@ -7,9 +7,9 @@ interface PremiumBadgeProps {
 }
 
 export function PremiumBadge({ size = "sm", showLabel = true }: PremiumBadgeProps) {
-  const { isPremium } = usePremium();
+  const { user } = useAuth();
 
-  if (!isPremium) return null;
+  if (!user?.isPremium) return null;
 
   const iconSize = size === "sm" ? "h-3 w-3" : "h-4 w-4";
   const padding = size === "sm" ? "px-2 py-0.5" : "px-3 py-1";
